@@ -14,8 +14,12 @@ const { sep } = path;
 
 module.exports = {
   /**
-   * 启动项目
-   * @param {Object} options
+   * Start the project
+   * @param {Object} options Startup parameters
+   * options ={
+   * name:"Project name",
+   * homePath:"Project homepage"
+   * }
    */
   start(options = {}) {
     const app = new Koa();
@@ -39,15 +43,31 @@ module.exports = {
 
     controllerLoader(app);
     console.log(`[start] load controller done`);
+    console.log(app.controllers);
 
     serviceLoader(app);
     console.log(`[start] load service done`);
+    console.log(app.services);
 
     configLoader(app);
     console.log(`[start] load config done`);
+    console.log(app.config);
 
     extendLoader(app);
     console.log(`[start] load extend done`);
+    console.log(app.customExtend);
+
+    // global middleware
+    try {
+      const middlewarePath = app.businessPath + `${sep}middleware.js`;
+      const fs = require("fs");
+      if (fs.existsSync(middlewarePath)) {
+        require(middlewarePath)(app);
+        console.log(`[start] load global middleware done`);
+      }
+    } catch (error) {
+      console.error("Failed to load global middleware:", error);
+    }
 
     routerLoader(app);
     console.log(`[start] load router done`);

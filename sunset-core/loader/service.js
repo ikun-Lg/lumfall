@@ -1,1 +1,48 @@
-module.exports = (app) => {};
+const path = require("path");
+const glob = require("glob");
+const { camelCase } = require("./utils");
+
+/**
+ * service loader
+ * @param {object} app Koa instance
+ *
+ * load all services,use `app.services.${dir}.${file}}` to access
+ *
+ * eg: app/service
+ *       |
+ *       |-- custom-module
+ *              |
+ *              |-- custom-service.js
+ *
+ *  => app.services.customModule.customService
+ */
+module.exports = (app) => {
+  const serviceDir = path.join(app.businessPath, "service");
+
+  app.services = {};
+
+  const files = glob.sync("**/*.js", { cwd: serviceDir });
+
+  files.forEach((file) => {
+    // glob v7 always returns `/`-separated results regardless of platform,
+    // normalize to path.sep before splitting
+    const normalizedFile = file.split("/").join(path.sep);
+    const parts = normalizedFile.split(path.sep);
+    const fileName = parts.pop();
+    const moduleName = camelCase(fileName.replace(/\.js$/, ""));
+
+    // build nested dir object, eg: custom-module => app.services.customModule
+    const target = parts.reduce(
+      (obj, dirName) =>
+        (obj[camelCase(dirName)] = obj[camelCase(dirName)] || {}),
+      app.services,
+    );
+
+    const service = require(path.join(serviceDir, normalizedFile))(app);
+    // support factory pattern: module.exports = (app) => ({...})
+    if (typeof service !== "function") {
+      throw new Error(`Service ${moduleName} is not a class`);
+    }
+    target[moduleName] = new service(app);
+  });
+};

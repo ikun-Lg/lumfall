@@ -1,14 +1,6 @@
 const path = require("path");
 const glob = require("glob");
-
-/**
- * convert kebab/snake case name to camelCase
- * eg: custom-module => customModule
- * @param {string} name
- * @returns {string}
- */
-const camelCase = (name) =>
-  name.replace(/[-_][a-z0-9]/gi, (match) => match[1].toUpperCase());
+const { camelCase } = require("./utils");
 
 /**
  * middleware loader
