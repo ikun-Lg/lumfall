@@ -17,4 +17,12 @@ module.exports = (app) => {
       },
     }),
   );
+
+  const bodyParser = require("koa-bodyparser");
+  app.use(
+    bodyParser({
+      formLimit: "1000mb",
+      enableTypes: ["json", "form", "text"],
+    }),
+  );
 };

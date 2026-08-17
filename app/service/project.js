@@ -1,6 +1,6 @@
 module.exports = (app) => {
-  return class ProjectService {
-    constructor() {}
+  const BaseService = require("./base")(app);
+  return class ProjectService extends BaseService {
     async getList() {
       return [
         {

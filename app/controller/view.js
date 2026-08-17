@@ -1,6 +1,7 @@
 const { sep } = require("path");
 
 module.exports = (app) => {
+  const BaseController = require("./base")(app);
   return class ViewController {
     /**
      * render page
