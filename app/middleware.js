@@ -25,4 +25,9 @@ module.exports = (app) => {
       enableTypes: ["json", "form", "text"],
     }),
   );
+
+  // API sign verification, runs before router, inside errorHandler's try/catch
+  app.use(app.middlewares.apiSignVerify)
+
+  app.use(app.middlewares.errorHandler)
 };
