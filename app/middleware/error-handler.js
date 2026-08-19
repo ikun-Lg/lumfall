@@ -16,7 +16,7 @@ module.exports = (app) => {
             if (message && message.indexOf('template not found') > -1) {
                 // redirect
                 ctx.status = 302;
-                ctx.redirect(`${app.options?.homePage}`);
+                ctx.redirect(app?.options?.homePath || "/");
                 return;
             }
 
