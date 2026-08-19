@@ -133,7 +133,7 @@ module.exports = (app, router) => {
 
 - 工厂签名是 `(app, router)`,多一个 `router` 参数(KoaRouter 实例)。
 - 路由文件里解构 `app.controllers`,**必须 `.bind(controller)`** 否则方法里 `this` 丢失。
-- 全部路由文件注册完后,router loader 会加一条兜底路由:未匹配路径 `302` 跳转 `app.options.homePath`(注意:错误处理器里跳的是 `homePage`,见第 7 节坑点)。
+- 全部路由文件注册完后,router loader 会加一条兜底路由:未匹配路径 `302` 跳转 `app.options.homePath`(错误处理器里的模板未找到跳转同样用 `homePath`,两处已统一)。
 
 ### 5.6 router-schema (`app/router-schema/`)
 
@@ -179,7 +179,7 @@ module.exports = {
 4. **文件名用原名访问 app 属性** → 必须用 camelCase。`api-params-verify.js` 挂的是 `app.middlewares.apiParamsVerify`,不是 `app.middlewares.api-params-verify`。
 5. **middleware 工厂返回非函数** → 挂上去的中间件调用会炸。controller/service 返回非 class → loader 直接抛错。
 6. **在 extend 里覆盖框架属性** → 被静默跳过(`app.config` 等永远安全),但容易误以为生效。同名时看启动日志的 `[extend] skip` 警告。
-7. **`homePath` vs `homePage` 不一致**(框架现状):router 兜底跳转用 `app.options.homePath`,error-handler 跳转用 `app.options.homePage`,而入口 `index.js` 只传了 `homePage`。两处跳转逻辑对不上,是已知不一致,后续重构需统一。
+7. **统一用 `homePath` 作首页跳转键**(已修复):router 兜底跳转和 error-handler 模板未找到跳转统一读 `app.options.homePath`,入口 `index.js` 传入 `homePath: "/view/page1"`。不要再传 `homePage`,避免两处跳转失效。
 8. **全局中间件顺序**由 `app/middleware.js` 决定:static → nunjucks → bodyparser → apiSignVerify → errorHandler → apiParamsVerify。新增全局中间件加在这里,并注意 errorHandler 要包住后续中间件(目前 apiSignVerify/apiParamsVerify 在其之前,不被 errorHandler 覆盖)。
 9. **`/api` 路径约定**:api-sign-verify 和 api-params-verify 都只处理 `ctx.path` 含 `/api` 的请求;非 `/api` 请求直接放行。路由里凡是要走签名/参数校验的接口,路径必须包含 `/api`。
 10. **API 错误码约定**:参数校验失败 `442`,签名校验失败 `445`,运行时异常 `5000`。业务自定义错误码避开这三个。
