@@ -1,3 +1,6 @@
 node_modules
 public
 .omo
+logs
+
+config.local.js

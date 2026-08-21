@@ -4,7 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint --fix --ext js,vue ."
+    "lint": "eslint --fix --ext js,vue .",
+    "dev": "_ENV='local' nodemon index.js",
+    "beta": "_ENV='beta' nodemon index.js",
+    "prod": "_ENV='prod' nodemon index.js",
+    "dev:win": "set _ENV='local' && nodemon index.js",
+    "beta:win": "set _ENV='beta' && nodemon index.js",
+    "prod:win": "set _ENV='prod' && nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ikun-Lg/sunset.git"
   },
   "keywords": [],
   "author": "LGgbond",
