@@ -23,11 +23,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.30.0",
   "dependencies": {
+    "@arco-design/web-vue": "^2.58.0",
     "@babel/core": "^7.24.0",
     "ajv": "^6.10.2",
     "axios": "^0.19.2",
     "echarts": "^5.5.0",
-    "element-plus": "^2.3.7",
     "generate-password": "^1.7.1",
     "glob": "^7.1.4",
     "jsonwebtoken": "^9.0.2",
