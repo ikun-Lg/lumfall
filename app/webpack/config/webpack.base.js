@@ -86,7 +86,8 @@ module.exports = {
       $page: path.resolve(process.cwd(), "./app/pages"),
       $common: path.resolve(process.cwd(), "./app/pages/common"),
       $widgets: path.resolve(process.cwd(), "./app/pages/common"),
-      store: path.resolve(process.cwd(), "./app/pages/store"),
+      $store: path.resolve(process.cwd(), "./app/pages/store"),
+      $assert: path.resolve(process.cwd(), "./app/pages/assert"),
     },
   },
 
@@ -101,6 +102,8 @@ module.exports = {
     // 把第三方库暴露到window下
     new webpack.ProvidePlugin({
       Vue: "vue",
+      axios: "axios",
+      _: "lodash",
     }),
     // 定义全局变量
     new webpack.DefinePlugin({
@@ -167,6 +170,6 @@ module.exports = {
       },
     },
     // runtime的代码单独打包成js
-    runtimeChunk:true
+    runtimeChunk: true,
   },
 };

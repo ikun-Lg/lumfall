@@ -1,7 +1,14 @@
 <template>
     <h1>page2</h1>
-    <input v-model="content" />
+    <a-input :style="{width:'320px'}" v-model="content" />
     <div>{{ content }}</div>
+    <a-space>
+        <a-button type="primary">Primary</a-button>
+        <a-button>Secondary</a-button>
+        <a-button type="dashed">Dashed</a-button>
+        <a-button type="outline">Outline</a-button>
+        <a-button type="text">Text</a-button>
+      </a-space>
 </template>
 
 <script setup>
