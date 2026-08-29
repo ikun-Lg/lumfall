@@ -1,17 +1,9 @@
 module.exports = (app) => {
   const BaseService = require("./base")(app);
+  const modelList = require("../../model/index")(app);
   return class ProjectService extends BaseService {
-    async getList() {
-      return [
-        {
-          id: 1,
-          name: "Project 1",
-        },
-        {
-          id: 2,
-          name: "Project 2",
-        },
-      ];
+    async getModelList() {
+      return modelList;
     }
   };
 };

@@ -29,11 +29,9 @@ glob.sync(entryList).forEach((file) => {
  *  webpack basic config
  */
 module.exports = {
-  // 打包入口：指定从哪些文件开始构建依赖图，可以是字符串、数组或对象（多入口）
-  entry: {
-    "entry.page1": "./app/pages/page1/entry.page1.js",
-    "entry.page2": "./app/pages/page2/entry.page2.js",
-  },
+  // 打包入口：通过 glob 自动扫描 app/pages/**/entry.*.js 得到（见上方 pageEntries），
+  // 删掉某个页面目录后无需手动改动这里。注意：下方不能有写死的 entry，否则会覆盖动态结果。
+  entry: pageEntries,
 
   // 模块处理规则：配置不同文件类型对应的 loader（如 vue / js / less 等）
   module: {
@@ -85,7 +83,7 @@ module.exports = {
     alias: {
       $page: path.resolve(process.cwd(), "./app/pages"),
       $common: path.resolve(process.cwd(), "./app/pages/common"),
-      $widgets: path.resolve(process.cwd(), "./app/pages/common"),
+      $widgets: path.resolve(process.cwd(), "./app/pages/widgets"),
       $store: path.resolve(process.cwd(), "./app/pages/store"),
       $assert: path.resolve(process.cwd(), "./app/pages/assert"),
     },
