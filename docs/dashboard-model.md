@@ -51,6 +51,16 @@
                 ],
                 "api": "", // componentType === dynamicSelect 时生效, 搜索项挂载后请求该接口拉取选项, 响应 data 为 [{ label, value }]
                 "valueFormat": "" // componentType === dateRange 时生效, 如 YYYY-MM-DD HH:mm:ss, 决定选中值的格式, 搜索值以 [start, end] 数组下发
+              },
+
+              "createFormOption":{
+                 ...aComponentConfig,
+                "componentType":"", // 创建表单项组件类型: input | select | dynamicSelect | dateRange
+                "visible": true,
+                "disabled": false,
+                "default":"",
+
+                "enumList":[],
               }
             },
             ...
@@ -61,7 +71,9 @@
             {
               "label": "",
               "eventKey": "",
-              "eventOption": {},
+              "eventOption": {
+                "componentName": "
+              },
               ...aButtonConfig
             },
             ...
@@ -71,6 +83,7 @@
               "label": "",
               "eventKey": "",
               "eventOption": {
+                "componentName": "",
                 "params": {
                   "paramKey": "rowValueKey",
                   ...
@@ -81,8 +94,15 @@
             ...
           ]
         },
+        // search-bar config
         "searchConfig": {},
-        "components": {}
+        // dynamic component config
+        "componentConfig": {
+          "createForm":{
+            "title":"",
+            "saveBtnText":""
+          }
+        }
       }
     }
   ]
