@@ -1,6 +1,7 @@
 module.exports = {
   name: "抖音课堂",
   desc: "课程系统 ",
+  homePage: "/todo?projectKey=douyin&key=video",
   menu: [
     {
       key: "traffic",
@@ -8,7 +9,6 @@ module.exports = {
       menuType: "module",
       moduleType: "sider",
       siderConfig: {
-        path: "/todo",
         menu: [
           {
             key: "user-traffic",

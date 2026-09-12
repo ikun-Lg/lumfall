@@ -11,18 +11,24 @@ const projectExtendModel = (model, project) => {
       // update or remain
       for (let i = 0; i < modelValue.length; i++) {
         let modelItem = modelValue[i];
-        let projectItem = projectValue.find(projectItem => projectItem.key === modelItem.key)
-        result.push(projectItem ? projectExtendModel(modelItem, projectItem) : modelItem)
+        let projectItem = projectValue.find(
+          (projectItem) => projectItem.key === modelItem.key,
+        );
+        result.push(
+          projectItem ? projectExtendModel(modelItem, projectItem) : modelItem,
+        );
       }
 
       // add new
       for (let i = 0; i < projectValue.length; i++) {
         let projectItem = projectValue[i];
-        let modelItem = modelValue.find(modelItem => modelItem.key === projectItem.key)
-        if (!modelItem) result.push(projectItem)
+        let modelItem = modelValue.find(
+          (modelItem) => modelItem.key === projectItem.key,
+        );
+        if (!modelItem) result.push(projectItem);
       }
 
-      return result
+      return result;
     }
   });
 };
@@ -50,6 +56,7 @@ module.exports = (app) => {
       }
       modelItem.project[projectKey] = require(path.resolve(file));
       modelItem.project[projectKey].key = projectKey;
+      modelItem.project[projectKey].modelKey = modelKey;
     }
 
     if (type === "model") {
@@ -64,12 +71,12 @@ module.exports = (app) => {
     }
   });
 
-  modelList.forEach(item => {
-    const { model, project } = item
+  modelList.forEach((item) => {
+    const { model, project } = item;
     for (const key in project) {
-      project[key] = projectExtendModel(model, project[key])
+      project[key] = projectExtendModel(model, project[key]);
     }
-  })
+  });
 
   return modelList;
 };

@@ -21,6 +21,13 @@ glob.sync(entryList).forEach((file) => {
       ),
       template: path.resolve(process.cwd(), "./app/view/entry.tpl"),
       chunks: [entryName],
+      // 模板里的 inline script 含 nunjucks 占位符 {{ name }}，交给后端渲染前不是合法 JS，
+      // 因此必须关掉 inline JS 压缩，否则 production 构建会被 terser 解析报错。
+      minify: {
+        collapseWhitespace: true,
+        removeComments: true,
+        minifyJS: false,
+      },
     }),
   );
 });
@@ -153,6 +160,7 @@ module.exports = {
           reuseExistingChunk: true,
         },
         common: {
+          test: /[\\/]common|widgets[\\/]/,
           // 拆分出的 chunk 名称固定为 "common"。
           name: "common",
           // 被至少 2 个 chunk 引用的模块才进入 common（提升公共复用率）。

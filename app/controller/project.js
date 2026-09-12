@@ -27,5 +27,36 @@ module.exports = (app) => {
 
       this.success(ctx, dtoModelList);
     }
+
+    getProjectList(ctx) {
+      const { projectKey } = ctx.request.query;
+      const { project: projectService } = app.services;
+      const projectList = projectService.getProjectList({ projectKey });
+
+      const dtoProjectList = projectList.map(
+        ({ key, name, desc, homePage, modelKey }) => ({
+          key,
+          name,
+          desc,
+          homePage,
+          modelKey,
+        }),
+      );
+
+      this.success(ctx, dtoProjectList);
+    }
+
+    getProject(ctx) {
+      const { projectKey } = ctx.request.query;
+      const { project: projectService } = app.services;
+      const project = projectService.getProject({ projectKey });
+
+      if (!project) {
+        this.fail(ctx, "获取项目异常", 50000);
+        return;
+      }
+
+      this.success(ctx, project);
+    }
   };
 };

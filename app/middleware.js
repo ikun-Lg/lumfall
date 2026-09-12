@@ -32,4 +32,6 @@ module.exports = (app) => {
     app.use(app.middlewares.errorHandler)
 
     app.use(app.middlewares.apiParamsVerify)
+
+    app.use(app.middlewares.projectHandler)
 };

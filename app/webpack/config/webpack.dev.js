@@ -42,7 +42,9 @@ const webpackConfig = merge.smart(baseConfig, {
     // 产物输出到磁盘的绝对目录
     path: path.join(process.cwd(), "./app/public/dist/dev"),
     // 浏览器通过该 URL 前缀加载 chunk；与 HMR 服务端地址保持一致，否则热更新拉不到资源
-    publicPath: `http://${HOST}:${PORT}/public/dist/dev`,
+    // 末尾斜杠不能省：webpack 运行时拼接异步 chunk（路由懒加载组件）时直接用
+    // publicPath + chunkFilename，少斜杠会拼成 /public/dist/devjs/xxx.js → ChunkLoadError
+    publicPath: `http://${HOST}:${PORT}/public/dist/dev/`,
     // 指定 webpack 运行时挂载模块系统的全局对象，`'this'` 比默认的 `'window'`
     // 更能在非浏览器环境(SSR/Worker/测试)下不报 ReferenceError
     globalObject: 'this',
