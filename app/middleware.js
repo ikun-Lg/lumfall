@@ -27,9 +27,11 @@ module.exports = (app) => {
     );
 
     // API sign verification, runs before router, inside errorHandler's try/catch
-    app.use(app.middlewares.apiSignVerify)
+    // app.use(app.middlewares.apiSignVerify)
 
     app.use(app.middlewares.errorHandler)
 
     app.use(app.middlewares.apiParamsVerify)
+
+    app.use(app.middlewares.projectHandler)
 };

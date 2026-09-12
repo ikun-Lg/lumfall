@@ -21,9 +21,11 @@ const webpackConfig = merge.smart(baseConfig, {
     // 内容不变则文件名不变，最利于浏览器长缓存 / 增量发布
     filename: "js/[name]_[chunkhash:8].bundle.js",
     // 产物输出到磁盘的绝对目录
-    path: path.join(process.cwd(), "./app/public/dist/prod"),
-    // 运行时公共路径前缀：HTML 里引用的 js/css 都以 /dist/prod 开头
-    publicPath: "/dist/prod",
+    path: path.join(process.cwd(), "./app/public/dist/prod/"),
+    // 运行时公共路径前缀：HTML 里引用的 js/css 都以 /dist/prod/ 开头。
+    // 末尾斜杠不能省：webpack 运行时拼接异步 chunk URL 时直接用 publicPath + chunkFilename，
+    // 少斜杠会导致 /dist/prod + js/xxx.js = /dist/prodjs/xxx.js，路径错误触发 ChunkLoadError。
+    publicPath: "/dist/prod/",
     // 给 <script>/<link> 加 crossorigin="anonymous"，配合 CDN/CORS 做错误上报与缓存
     crossOriginLoading: "anonymous",
   },
@@ -121,9 +123,10 @@ const webpackConfig = merge.smart(baseConfig, {
     // 开启压缩（生产环境应为 true）
     minimize: true,
     minimizer: [
-      // 用 Terser 压缩 JS；cache 缓存中间结果、parallel 多文件并行压缩以提速
+      // 用 Terser 压缩 JS；parallel 多文件并行压缩以提速。
+      // 注意：terser-webpack-plugin v5 内置 terser 5，支持 ES2020+ 语法（可选链、空值合并等），
+      // v4 的 cache 选项已移除（webpack 5 自带持久化缓存）。
       new TerserWebpackPlugin({
-        cache: true,
         parallel: true,
         terserOptions: {
           compress: {

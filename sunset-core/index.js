@@ -21,7 +21,7 @@ module.exports = {
    * homePath:"Project homepage"
    * }
    */
-  start(options = {}) {
+  async start(options = {}) {
     const app = new Koa();
 
     app.options = options;
@@ -75,10 +75,12 @@ module.exports = {
     try {
       const port = process.env.PORT || 3000;
       const host = process.env.IP || "0.0.0.0";
-      app.listen(port, host);
+      app.server = app.listen(port, host);
       console.log("Server running on http://" + host + ":" + port);
     } catch (error) {
       console.error("Failed to start server:", error);
     }
+
+    return app;
   },
 };
