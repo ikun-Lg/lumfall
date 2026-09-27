@@ -105,6 +105,9 @@ module.exports = {
               label: "新增商品",
               eventKey: "showComponent",
               type: "outline",
+              eventOption: {
+                comName: "createForm",
+              },
             },
           ],
           rowButtons: [
@@ -124,6 +127,12 @@ module.exports = {
               },
             },
           ],
+          componentConfig: {
+            createForm: {
+              title: "新增商品",
+              saveBtnText: "新增商品",
+            },
+          },
         },
       },
     },
