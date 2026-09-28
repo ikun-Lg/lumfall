@@ -39,6 +39,61 @@ module.exports = (app) => {
     }
 
     /**
+     * 获取单个商品（mock）
+     * @param {{ productId: string }} param0
+     * @returns {object|null} 商品不存在时返回 null
+     */
+    getBusiness({ productId }) {
+      return mockPool.find((item) => item.productId === productId) || null;
+    }
+
+    /**
+     * 创建商品（mock）
+     * @param {{ productName: string, price?: number, inventory?: number }} productData
+     */
+    createBusiness(productData) {
+      const nextId = mockPool.reduce((maxId, item) => {
+        const id = Number(item.productId.slice(1)) || 0;
+        return Math.max(maxId, id);
+      }, 0) + 1;
+      const product = {
+        productId: `P${String(nextId).padStart(6, "0")}`,
+        productName: productData.productName,
+        productType: PRODUCT_TYPE_ENUM_LIST[0].value,
+        status: "1",
+        price: productData.price ?? 0,
+        inventory: productData.inventory ?? 0,
+        createTime: new Date().toISOString().slice(0, 19).replace("T", " "),
+      };
+
+      mockPool.push(product);
+      return product;
+    }
+
+    /**
+     * 更新商品（mock）
+     * @param {{ productId: string, productName?: string, price?: number, inventory?: number }} productData
+     * @returns {object|null} 更新后的商品；商品不存在时返回 null
+     */
+    updateBusiness(productData) {
+      const product = mockPool.find(
+        (item) => item.productId === productData.productId,
+      );
+
+      if (!product) {
+        return null;
+      }
+
+      for (const key of ["productName", "price", "inventory"]) {
+        if (productData[key] !== undefined) {
+          product[key] = productData[key];
+        }
+      }
+
+      return product;
+    }
+
+    /**
      * 删除业务数据（mock）
      * @param {{ productId: string }} param0
      * @returns {boolean} 是否删除成功

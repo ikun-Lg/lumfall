@@ -20,10 +20,17 @@ module.exports = {
                 ellipsis: true,
                 tooltip: true,
               },
+              editFormOption: {
+                componentType: "input",
+                disabled: true,
+              },
+              detailPanelOption: {},
             },
             productName: {
               type: "string",
               label: "商品名称",
+              maxLength: 10,
+              minLength: 3,
               tableOption: {
                 width: 200,
               },
@@ -32,7 +39,17 @@ module.exports = {
                 default: "",
                 placeholder: "请输入商品名称",
                 allowClear: true,
+                api: "/api/project/productEnum/list",
               },
+              createFormOption: {
+                componentType: "input",
+                default: "10086",
+              },
+              editFormOption: {
+                componentType: "input",
+                // visible: false,
+              },
+              detailPanelOption: {},
             },
             productType: {
               type: "string",
@@ -69,13 +86,23 @@ module.exports = {
                   { label: "下架", value: "0" },
                 ],
               },
+              detailPanelOption: {},
             },
             price: {
               type: "number",
               label: "价格",
+              maximum: 1000,
+              minimum: 30,
               tableOption: {
                 width: 200,
               },
+              createFormOption: {
+                componentType: "inputNumber",
+              },
+              editFormOption: {
+                componentType: "inputNumber",
+              },
+              detailPanelOption: {},
             },
             inventory: {
               type: "number",
@@ -83,6 +110,33 @@ module.exports = {
               tableOption: {
                 width: 200,
               },
+              createFormOption: {
+                componentType: "select",
+                enumList: [
+                  {
+                    label: "全部",
+                    value: -1,
+                  },
+                  {
+                    label: "100",
+                    value: 100,
+                  },
+                ],
+              },
+              editFormOption: {
+                componentType: "select",
+                enumList: [
+                  {
+                    label: "全部",
+                    value: -1,
+                  },
+                  {
+                    label: "100",
+                    value: 100,
+                  },
+                ],
+              },
+              detailPanelOption: {},
             },
             createTime: {
               type: "string",
@@ -96,8 +150,10 @@ module.exports = {
                 showTime: true,
                 valueFormat: "YYYY-MM-DD HH:mm:ss",
               },
+              detailPanelOption: {},
             },
           },
+          required: ["productName"],
         },
         tableConfig: {
           headerButtons: [
@@ -105,13 +161,27 @@ module.exports = {
               label: "新增商品",
               eventKey: "showComponent",
               type: "outline",
+              eventOption: {
+                comName: "createForm",
+              },
             },
           ],
           rowButtons: [
             {
+              label: "查看",
+              eventKey: "showComponent",
+              type: "primary",
+              eventOption: {
+                comName: "detailPanel",
+              },
+            },
+            {
               label: "修改",
-              eventKey: "edit",
+              eventKey: "showComponent",
               type: "warning",
+              eventOption: {
+                comName: "editForm",
+              },
             },
             {
               label: "删除",
@@ -124,6 +194,21 @@ module.exports = {
               },
             },
           ],
+          componentConfig: {
+            createForm: {
+              title: "新增商品",
+              saveBtnText: "新增商品",
+            },
+            editForm: {
+              mainKey: "productId",
+              title: "修改商品",
+              saveBtnText: "修改商品",
+            },
+            detailPanel: {
+              mainKey: "productId",
+              title: "商品详情",
+            },
+          },
         },
       },
     },

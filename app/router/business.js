@@ -7,8 +7,23 @@ module.exports = (app, router) => {
   );
 
   router.get(
+    "/api/project/product",
+    businessController.getBusiness.bind(businessController),
+  );
+
+  router.get(
     "/api/project/productEnum/list",
     businessController.getProductEnumList.bind(businessController),
+  );
+
+  router.post(
+    "/api/project/product",
+    businessController.createBusiness.bind(businessController),
+  );
+
+  router.put(
+    "/api/project/product",
+    businessController.updateBusiness.bind(businessController),
   );
 
   router.delete(

@@ -8,9 +8,10 @@ export const useSchema = function () {
 
   const api = ref("");
   const tableSchema = ref({});
-  const tableConfig = ref({});
+  const tableConfig = ref();
   const searchSchema = ref({});
-  const searchConfig = ref({});
+  const searchConfig = ref();
+  const components = ref();
 
   const buildData = function () {
     const { key, siderKey } = route.query;
@@ -30,6 +31,7 @@ export const useSchema = function () {
       tableConfig.value = undefined;
       searchSchema.value = {};
       searchConfig.value = undefined;
+      components.value = {};
       nextTick(() => {
         tableSchema.value = buildDtoSchema(configSchema, "table");
         tableConfig.value = schemaConfig.tableConfig ?? {};
@@ -42,11 +44,32 @@ export const useSchema = function () {
         }
         searchSchema.value = dtoSearchSchema;
         searchConfig.value = schemaConfig.searchConfig ?? {};
+
+        // build components = {key:{schema:{},config:{}}}
+        const componentConfig = schemaConfig.tableConfig?.componentConfig;
+        if (componentConfig && Object.keys(componentConfig).length > 0) {
+          const dtoComponents = {};
+
+          for (const comName in componentConfig) {
+            const comConfig = componentConfig[comName];
+            const dtoComSchema = buildDtoSchema(
+              configSchema,
+              comName,
+            );
+            dtoComponents[comName] = {
+              schema: dtoComSchema,
+              config: comConfig ?? {},
+            };
+          }
+          components.value = dtoComponents;
+        }
       });
     }
   };
 
   function buildDtoSchema(_schema, comName) {
+    
+
     if (!_schema?.properties) {
       return {};
     }
@@ -65,9 +88,15 @@ export const useSchema = function () {
             dtoProps[pKey] = props[pKey];
           }
         }
+
         dtoProps = Object.assign({}, dtoProps, {
           option: props[`${comName}Option`],
         });
+
+        const { required } = _schema;
+        if (required && required.find((pk) => pk === key)) {
+          dtoProps.option.required = true;
+        }
         dtoSchema.properties[key] = dtoProps;
       }
     }
@@ -99,5 +128,6 @@ export const useSchema = function () {
     tableConfig,
     searchSchema,
     searchConfig,
+    components,
   };
 };
