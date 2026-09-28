@@ -52,7 +52,10 @@ export const useSchema = function () {
 
           for (const comName in componentConfig) {
             const comConfig = componentConfig[comName];
-            const dtoComSchema = buildDtoSchema(comConfig.schema, comName);
+            const dtoComSchema = buildDtoSchema(
+              configSchema,
+              comName,
+            );
             dtoComponents[comName] = {
               schema: dtoComSchema,
               config: comConfig ?? {},
@@ -65,6 +68,8 @@ export const useSchema = function () {
   };
 
   function buildDtoSchema(_schema, comName) {
+    
+
     if (!_schema?.properties) {
       return {};
     }

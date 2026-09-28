@@ -13,6 +13,38 @@ module.exports = (app) => {
       await this.success(ctx, data, { total });
     }
 
+    async getBusiness(ctx) {
+      const { productId } = ctx.request.query;
+      const { business: businessService } = app.services;
+      const product = businessService.getBusiness({ productId });
+
+      if (!product) {
+        await this.fail(ctx, "获取失败，未找到对应商品", 50000);
+        return;
+      }
+
+      await this.success(ctx, product);
+    }
+
+    async createBusiness(ctx) {
+      const { business: businessService } = app.services;
+      const product = businessService.createBusiness(ctx.request.body);
+
+      await this.success(ctx, product);
+    }
+
+    async updateBusiness(ctx) {
+      const { business: businessService } = app.services;
+      const product = businessService.updateBusiness(ctx.request.body);
+
+      if (!product) {
+        await this.fail(ctx, "更新失败，未找到对应商品", 50000);
+        return;
+      }
+
+      await this.success(ctx, product);
+    }
+
     async deleteBusinessList(ctx) {
       const { productId } = ctx.request.body;
 

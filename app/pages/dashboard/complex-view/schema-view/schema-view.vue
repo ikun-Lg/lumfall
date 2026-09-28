@@ -78,6 +78,13 @@ const showComponent = ({btnConfig, rowData}) => {
 const EventHandlerMap = {
   showComponent,
 };
+
+const onComponentCommand = (data)=>{
+  const {event} = data;
+  if(event === 'loadTableData'){
+    tablePanelRef.value.loadTableData()
+  }
+}
 </script>
 
 <style lang="less" scoped>

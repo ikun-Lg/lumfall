@@ -1,3 +1,5 @@
+<!-- schema以此为标准 https://json-schema.org/draft-07/schema-->
+
 ```json
 {
   "mode": "dashboard",
@@ -60,7 +62,22 @@
                 "disabled": false,
                 "default":"",
 
-                "enumList":[],
+                "enumList":[], // componentTyoe === 'select'
+              }，
+
+              "editFormOption": {
+                 ...aComponentConfig,
+                "componentType":"", // 创建表单项组件类型: input | select | dynamicSelect | dateRange
+                "visible": true,
+                "disabled": false,
+                "default":"",
+
+                "enumList":[], // componentTyoe === 'select'
+              },
+
+              "detailPanelOption":{
+                ...aComponentConfig,
+                "title":""
               }
             },
             ...
@@ -105,6 +122,14 @@
           "createForm":{
             "title":"",
             "saveBtnText":""
+          },
+          "editForm":{
+            "mainKey":"", //表单主键
+            "title":"",
+            "saveBtnText":""
+          },
+          "detailPanel":{
+            "mainKey":""
           }
         }
       }
