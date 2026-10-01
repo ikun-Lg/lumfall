@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const Ajv = require("ajv");
 
 /**
  * config loader
@@ -26,11 +27,9 @@ module.exports = (app) => {
 
     const mod = require(filePath);
     const config = typeof mod === "function" ? mod(app) : mod;
-    if (!config || typeof config !== "object" || Array.isArray(config)) {
+    if (!isPlainObject(config)) {
       throw new Error(
-        `[config] ${path.basename(filePath)} must export a plain object, got ${
-          Array.isArray(config) ? "array" : typeof config
-        }`,
+        `[config] ${filePath} must export a plain object`,
       );
     }
 
@@ -55,4 +54,36 @@ module.exports = (app) => {
     ...frameworkEnvConfig,
     ...businessEnvConfig,
   };
+
+  const configSchema = app.options?.configSchema;
+  if (configSchema !== undefined) {
+    if (!isPlainObject(configSchema)) {
+      throw new Error("[config] options.configSchema must be a plain object");
+    }
+
+    let validate;
+    try {
+      validate = new Ajv({ allErrors: true }).compile(configSchema);
+    } catch (error) {
+      throw new Error(`[config] options.configSchema is invalid: ${error.message}`);
+    }
+
+    if (!validate(app.config)) {
+      const errors = validate.errors
+        .map(({ dataPath, message }) => `${dataPath || "/"} ${message}`)
+        .join("; ");
+      throw new Error(
+        `[config] merged configuration for "${env}" is invalid: ${errors}`,
+      );
+    }
+  }
 };
+
+function isPlainObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
