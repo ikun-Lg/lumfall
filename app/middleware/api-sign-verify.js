@@ -18,11 +18,18 @@ module.exports = (app) => {
         const sSign = ssign || s_sign;
         const st = stTs || s_t;
 
-        const signKey = 'lumfall';
+        const signKey = app.config?.security?.apiSignature?.secret || "lumfall";
         const signature = md5(`${signKey}_${st}`);
         app.logger.info(`[${method} ${path} signature ${signature}]`);
 
-        if (!sSign || !st || signature !== sSign.toLowerCase() || Date.now() - st > 600000) {
+        const maxAgeMs = app.config?.security?.apiSignature?.maxAgeMs || 600000;
+        const timestamp = Number(st);
+        if (
+            !sSign ||
+            !Number.isFinite(timestamp) ||
+            signature !== sSign.toLowerCase() ||
+            Math.abs(Date.now() - timestamp) > maxAgeMs
+        ) {
             ctx.status = 200;
             ctx.body = {
                 success: false,
