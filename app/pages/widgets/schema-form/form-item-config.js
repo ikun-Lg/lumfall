@@ -2,8 +2,10 @@ import input from "./complex-view/input/input.vue";
 import inputNumber from "./complex-view/input-number/input-number.vue";
 import select from "./complex-view/select/select.vue";
 
+import BusinessFormItemConfig from "$businessFormItemConfig";
+
 const FormItemConfig = {
-  input:{
+  input: {
     component: input,
   },
   inputNumber: {
@@ -11,7 +13,10 @@ const FormItemConfig = {
   },
   select: {
     component: select,
-  }
+  },
 };
 
-export default FormItemConfig
+export default {
+  ...FormItemConfig,
+  ...BusinessFormItemConfig,
+};

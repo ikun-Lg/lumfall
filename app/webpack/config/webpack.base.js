@@ -115,38 +115,75 @@ module.exports = merge.smart(
         path.resolve(__dirname, "../../../node_modules"),
         "node_modules",
       ],
-      alias: {
-        vue: require.resolve("vue"),
-        $sunsetPage: path.resolve(__dirname, "../../pages"),
-        $sunsetBoot: path.resolve(__dirname, "../../pages/boot.js"),
-        $sunsetCommon: path.resolve(__dirname, "../../pages/common"),
-        $sunsetCurl: path.resolve(__dirname, "../../pages/common/curl.js"),
-        $sunsetUtils: path.resolve(__dirname, "../../pages/common/utils.js"),
-        $sunsetWidgets: path.resolve(__dirname, "../../pages/widgets"),
-        $sunsetStore: path.resolve(__dirname, "../../pages/store"),
-        $sunsetAssert: path.resolve(__dirname, "../../pages/assert"),
-        // 业务组件
-        $sunsetHeaderContainer: path.resolve(
-          __dirname,
-          "../../pages/widgets/header-container/header-container.vue",
-        ),
-        $sunsetSchemaForm: path.resolve(
-          __dirname,
-          "../../pages/widgets/schema-form/schema-form.vue",
-        ),
-        $sunsetSchemaSearchBar: path.resolve(
-          __dirname,
-          "../../pages/widgets/schema-search-bar/schema-search-bar.vue",
-        ),
-        $sunsetSchemaTable: path.resolve(
-          __dirname,
-          "../../pages/widgets/schema-table/schema-table.vue",
-        ),
-        $sunsetSiderContainer: path.resolve(
-          __dirname,
-          "../../pages/widgets/sider-container/sider-container.vue",
-        ),
-      },
+      alias: (() => {
+        const businessDashboardRouterConfigPath = path.resolve(
+          process.cwd(),
+          "app/pages/dashboard/router.js",
+        );
+        const blankModulePath = path.resolve(__dirname, "../libs/blank.js");
+
+        const businessComponentConfig = path.resolve(
+          process.cwd(),
+          "./app/pages/dashboard/complex-view/schema-view/components/component-config.js",
+        );
+
+        const businessFormItemConfig = path.resolve(
+          process.cwd(),
+          "./app/pages/widgets/schema-form/form-item-config.js",
+        );
+
+        const businessSearchItemConfig = path.resolve(
+          process.cwd(),
+          "./app/pages/widgets/schema-search-bar/complex-view/search-item-config.js",
+        );
+
+        return {
+          vue: require.resolve("vue"),
+          $sunsetPage: path.resolve(__dirname, "../../pages"),
+          $sunsetBoot: path.resolve(__dirname, "../../pages/boot.js"),
+          $sunsetCommon: path.resolve(__dirname, "../../pages/common"),
+          $sunsetCurl: path.resolve(__dirname, "../../pages/common/curl.js"),
+          $sunsetUtils: path.resolve(__dirname, "../../pages/common/utils.js"),
+          $sunsetWidgets: path.resolve(__dirname, "../../pages/widgets"),
+          $sunsetStore: path.resolve(__dirname, "../../pages/store"),
+          $sunsetAssert: path.resolve(__dirname, "../../pages/assert"),
+          $businessDashboardRouterConfig: fs.existsSync(
+            businessDashboardRouterConfigPath,
+          )
+            ? businessDashboardRouterConfigPath
+            : blankModulePath,
+          $businessComponentConfig: fs.existsSync(businessComponentConfig)
+            ? businessComponentConfig
+            : blankModulePath,
+          $businessFormItemConfig: fs.existsSync(businessFormItemConfig)
+            ? businessFormItemConfig
+            : blankModulePath,
+          $businessSearchItemConfig: fs.existsSync(businessSearchItemConfig)
+            ? businessSearchItemConfig
+            : blankModulePath,
+          // 业务组件
+          $sunsetHeaderContainer: path.resolve(
+            __dirname,
+            "../../pages/widgets/header-container/header-container.vue",
+          ),
+          $sunsetSchemaForm: path.resolve(
+            __dirname,
+            "../../pages/widgets/schema-form/schema-form.vue",
+          ),
+          $sunsetSchemaSearchBar: path.resolve(
+            __dirname,
+            "../../pages/widgets/schema-search-bar/schema-search-bar.vue",
+          ),
+          $sunsetSchemaTable: path.resolve(
+            __dirname,
+            "../../pages/widgets/schema-table/schema-table.vue",
+          ),
+          $sunsetSiderContainer: path.resolve(
+            __dirname,
+            "../../pages/widgets/sider-container/sider-container.vue",
+          ),
+        };
+      })(),
     },
 
     // 插件列表：用于执行范围更广的任务（如 html 生成、代码分割、环境变量注入等）
