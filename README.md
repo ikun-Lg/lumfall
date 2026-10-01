@@ -70,6 +70,10 @@ your-app/
 
 框架以启动时的 `process.cwd()` 作为业务项目根目录，因此应从业务项目根目录启动进程。
 
+## Page manifest
+
+Webpack 与运行时共用 `entry.<name>.js` 页面发现规则。框架页和业务页重名时业务页覆盖框架页；同一来源中出现重复 page name 会在构建/启动时给出两个冲突入口路径。`/view/<name>` 只渲染已发现的页面：未知页面返回 HTTP 404（code `4041`），已发现但缺少 `app/public/dist/entry.<name>.tpl` 构建产物时返回 HTTP 503（code `5031`），不会静默重定向首页。
+
 ## 自动加载约定
 
 框架内置实现与业务项目中同名类别的文件都会加载。文件名和子目录名会转换为 camelCase，例如 `app/service/user-service.js` 会挂载为 `app.services.userService`，`app/middleware/admin/auth-check.js` 会挂载为 `app.middlewares.admin.authCheck`。
