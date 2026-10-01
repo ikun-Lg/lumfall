@@ -27,6 +27,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec mocha --no-config test/health.test.js
       - run: npm pack --dry-run
+      - name: Verify npm credentials
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::Missing NPM_TOKEN Actions secret. Add it in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
