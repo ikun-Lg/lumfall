@@ -197,6 +197,25 @@ frontendBuild(process.env._ENV);
 
 根目录的 `index.js` 是模块入口，不会在直接执行时启动 HTTP 服务。业务项目应由自己的入口调用 `serviceStart()`；`pnpm dev` 当前仅通过 nodemon 执行该模块，不会启动业务 HTTP 服务。
 
+## Monitoring 与 tracing
+
+`serviceStart({ monitoring })` 是可选的请求级观测入口；不配置时监控中间件为纯 passthrough，不写入任何响应头。配置后该中间件位于 `errorHandler` 内侧，因此内层抛出的异常会先被记录，再交给 `errorHandler` 渲染响应。
+
+```js
+serviceStart({
+  monitoring: {
+    traceHeader: "x-trace-id", // 可选，默认 x-trace-id
+    onRequestStart({ traceId, method, path }) {},
+    onRequestEnd({ traceId, method, path, status, durationMs }) {},
+    onRequestError({ traceId, method, path, error, durationMs }) {},
+  },
+});
+```
+
+生命周期：`onRequestStart` 在进入内层中间件前触发；请求正常结束时触发 `onRequestEnd`（携带最终 `status` 与 `durationMs`）；内层抛错时触发 `onRequestError`（携带 `error` 与 `durationMs`）后原样重抛。
+
+关联规则：请求头 `traceHeader` 非空时直接复用，否则生成一个 trace id，并通过同名响应头回显。trace id 同时写入 `ctx.traceId`。hook 抛出的异常只记录 warning，不会改变响应状态、响应体或原始错误；配置中的未知键、非函数 hook、空 `traceHeader` 会在启动时报错。
+
 ## 健康检查
 
 - `GET /health/live`：存活探针，只检查服务进程能否响应。

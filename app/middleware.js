@@ -31,6 +31,9 @@ module.exports = (app) => {
 
     app.use(app.middlewares.errorHandler)
 
+    // monitoring sits inside errorHandler so thrown errors reach it before errorHandler renders the response
+    app.use(app.middlewares.monitoring)
+
     app.use(app.middlewares.apiParamsVerify)
 
     app.use(app.middlewares.projectHandler)
