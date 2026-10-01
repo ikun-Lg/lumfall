@@ -19,12 +19,12 @@ const { camelCase } = require("./utils");
 module.exports = (app) => {
   app.services = {};
 
-  const sunsetDir = path.resolve(__dirname, "..", "..");
-  const sunsetServiceDir = path.join(sunsetDir, "app", "service");
+  const lumfallDir = path.resolve(__dirname, "..", "..");
+  const lumfallServiceDir = path.join(lumfallDir, "app", "service");
   const businessServiceDir = path.join(app.businessPath, "service");
 
-  loadServices(sunsetServiceDir);
-  if (path.resolve(sunsetServiceDir) !== path.resolve(businessServiceDir)) {
+  loadServices(lumfallServiceDir);
+  if (path.resolve(lumfallServiceDir) !== path.resolve(businessServiceDir)) {
     loadServices(businessServiceDir);
   }
 

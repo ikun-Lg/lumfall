@@ -1,35 +1,35 @@
 ---
-name: sunset
-description: Sunset framework + demo business project conventions. This repo contains the framework project in sunset/ and a real business project in sunset-demo/ that uses the framework via require("sunset"). The skill describes the actual loader behavior, app path conventions, and the difference between framework-owned code and business-owned code.
+name: lumfall
+description: Lumfall framework + demo business project conventions. This repo contains the framework project in lumfall/ and a real business project in lumfall-demo/ that uses the framework via require("lumfall"). The skill describes the actual loader behavior, app path conventions, and the difference between framework-owned code and business-owned code.
 ---
 
-# Sunset 框架与 demo 业务项目约定
+# Lumfall 框架与 demo 业务项目约定
 
 这个工作区里有两个层次：
 
-- `sunset/`：框架项目本体，负责 Koa 启动、loader、配置、路由、前端构建和通用能力。
-- `sunset-demo/`：业务项目，真正的应用代码放在这里，它通过 `require("sunset")` 使用框架。
+- `lumfall/`：框架项目本体，负责 Koa 启动、loader、配置、路由、前端构建和通用能力。
+- `lumfall-demo/`：业务项目，真正的应用代码放在这里，它通过 `require("lumfall")` 使用框架。
 
 要写代码前，必须先分清：
 
-- 框架自带目录：`sunset/app/`, `sunset/sunset-core/`, `sunset/config/`
-- 业务目录：`sunset-demo/app/`, `sunset-demo/config/`, `sunset-demo/model/`
+- 框架自带目录：`lumfall/app/`, `lumfall/lumfall-core/`, `lumfall/config/`
+- 业务目录：`lumfall-demo/app/`, `lumfall-demo/config/`, `lumfall-demo/model/`
 
-框架启动时并不是只看当前仓库目录，而是用 `process.cwd()` 作为业务根目录；因此业务项目在实际运行时通常从 `sunset-demo/` 目录启动，`app.businessPath` 会指向 `process.cwd()/app`。
+框架启动时并不是只看当前仓库目录，而是用 `process.cwd()` 作为业务根目录；因此业务项目在实际运行时通常从 `lumfall-demo/` 目录启动，`app.businessPath` 会指向 `process.cwd()/app`。
 
 ## 1. 项目关系与入口
 
 ### 1.1 框架入口
 
-在 `sunset/index.js` 中，框架对外导出：
+在 `lumfall/index.js` 中，框架对外导出：
 
 ```js
 module.exports = {
   Controller: { Base: require("./app/controller/base.js") },
   Service: { Base: require("./app/service/base.js") },
   frontendBuild(env) { ... },
-  serviceStart(options = { homePath: "/view/health", name: "sunset" }) {
-    return SunsetCore.start(options);
+  serviceStart(options = { homePath: "/view/health", name: "lumfall" }) {
+    return LumfallCore.start(options);
   },
 };
 ```
@@ -41,29 +41,29 @@ module.exports = {
 
 ### 1.2 业务项目入口
 
-示例业务项目 `sunset-demo/server.js`：
+示例业务项目 `lumfall-demo/server.js`：
 
 ```js
-const { serviceStart } = require("sunset");
+const { serviceStart } = require("lumfall");
 const app = serviceStart();
 ```
 
-而 `sunset-demo/build.js` 做的是前端构建：
+而 `lumfall-demo/build.js` 做的是前端构建：
 
 ```js
-const { frontendBuild } = require("sunset");
+const { frontendBuild } = require("lumfall");
 frontendBuild(process.env._ENV);
 ```
 
 这说明：
 
-- `sunset-demo` 是业务项目
-- `sunset` 是框架项目
+- `lumfall-demo` 是业务项目
+- `lumfall` 是框架项目
 - 业务代码不应该在框架根目录里随意写；应该写在业务项目的 `app/`、`router/`、`service/` 等目录中
 
 ## 2. 真正的启动流程
 
-`SunsetCore.start()` 在 `sunset/sunset-core/index.js` 中定义，顺序固定：
+`LumfallCore.start()` 在 `lumfall/lumfall-core/index.js` 中定义，顺序固定：
 
 ```text
 middleware -> router-schema -> controller -> service -> config -> extend -> router
@@ -103,7 +103,7 @@ module.exports = (app) => { ... }
 
 ### 3.1 controller
 
-`sunset/sunset-core/loader/controller.js` 会扫描：
+`lumfall/lumfall-core/loader/controller.js` 会扫描：
 
 - framework 内置 `app/controller`
 - business `app.businessPath/controller`
@@ -132,7 +132,7 @@ module.exports = (app) => class UserController {
 
 ### 3.3 middleware
 
-`sunset/sunset-core/loader/middleware.js` 会把目录下文件挂到 `app.middlewares`：
+`lumfall/lumfall-core/loader/middleware.js` 会把目录下文件挂到 `app.middlewares`：
 
 ```js
 app.middlewares.apiParamsVerify
@@ -146,7 +146,7 @@ module.exports = (app) => (ctx, next) => {
 };
 ```
 
-而根级 `app/middleware.js`（例如 `sunset-demo/app/middleware.js`）是全局注册入口，里面要显式：
+而根级 `app/middleware.js`（例如 `lumfall-demo/app/middleware.js`）是全局注册入口，里面要显式：
 
 ```js
 module.exports = (app) => {
@@ -165,7 +165,7 @@ app.health
 
 ### 3.5 router
 
-`sunset/sunset-core/loader/router.js` 会：
+`lumfall/lumfall-core/loader/router.js` 会：
 
 - 先加载业务路由目录
 - 再加载框架路由目录
@@ -198,7 +198,7 @@ router.get("*", async (ctx) => {
 
 ## 5. 配置加载
 
-`sunset/sunset-core/loader/config.js` 实际做的是双层合并：
+`lumfall/lumfall-core/loader/config.js` 实际做的是双层合并：
 
 ```js
 const frameworkDefaultConfig = loadConfig("default", frameworkConfigDir);
@@ -227,19 +227,19 @@ app.config = {
 
 ## 6. demo 是业务项目的例子
 
-`sunset-demo` 里真实业务代码遵循的是框架约定，而不是框架本体结构：
+`lumfall-demo` 里真实业务代码遵循的是框架约定，而不是框架本体结构：
 
-- `sunset-demo/app/controller/business.js` 返回 class Controller，使用 `app.services`
-- `sunset-demo/app/middleware.js` 注册全局 middleware
-- `sunset-demo/app/router/business.js` 注册接口
-- `sunset-demo/app/router-schema/business.js` 声明 schema
-- `sunset-demo/app/service/business.js` 提供业务逻辑
+- `lumfall-demo/app/controller/business.js` 返回 class Controller，使用 `app.services`
+- `lumfall-demo/app/middleware.js` 注册全局 middleware
+- `lumfall-demo/app/router/business.js` 注册接口
+- `lumfall-demo/app/router-schema/business.js` 声明 schema
+- `lumfall-demo/app/service/business.js` 提供业务逻辑
 
 例如：
 
 ```js
 module.exports = (app) => {
-  const BaseController = require("sunset").Controller.Base(app);
+  const BaseController = require("lumfall").Controller.Base(app);
   return class BusinessController extends BaseController {
     async getBusinessList(ctx) {
       const { business: businessService } = app.services;
@@ -259,8 +259,8 @@ module.exports = (app) => {
 
 遇到新代码时，优先判断它属于哪一层：
 
-- `sunset/` 下：框架能力、loader、启动器、内置 app
-- `sunset-demo/` 下：业务实现、接口、页面、服务逻辑
+- `lumfall/` 下：框架能力、loader、启动器、内置 app
+- `lumfall-demo/` 下：业务实现、接口、页面、服务逻辑
 
 如果文件在业务项目中：
 
@@ -269,14 +269,14 @@ module.exports = (app) => {
 
 如果文件在框架项目中：
 
-- 只修正框架核心逻辑，例如 `sunset-core/loader/*`, `sunset/index.js`, `sunset-core/env.js`
+- 只修正框架核心逻辑，例如 `lumfall-core/loader/*`, `lumfall/index.js`, `lumfall-core/env.js`
 - 不要把业务应用逻辑硬编码进框架根目录
 
 ## 8. 常见误区
 
-1. 把 `sunset` 当业务项目写代码
-   - 错：在 `sunset/app/...` 里堆业务接口
-   - 对：把业务代码写到 `sunset-demo/app/...`
+1. 把 `lumfall` 当业务项目写代码
+   - 错：在 `lumfall/app/...` 里堆业务接口
+   - 对：把业务代码写到 `lumfall-demo/app/...`
 
 2. 用 `__dirname` 当业务目录
    - 错：会指向当前文件所在目录，而不是业务项目根目录
@@ -296,11 +296,11 @@ module.exports = (app) => {
 
 ## 9. 结论
 
-Sunset 的设计是：
+Lumfall 的设计是：
 
 - framework repo 负责“启动和装配能力”
 - business repo 负责“具体业务实现”
 
-`sunset-demo` 是当前最好的业务项目示例；它证明了：你可以在另一个项目中依赖框架，并按 `app/controller` / `app/service` / `app/router` / `app/router-schema` 的约定扩展业务功能，而不必修改框架本体。
+`lumfall-demo` 是当前最好的业务项目示例；它证明了：你可以在另一个项目中依赖框架，并按 `app/controller` / `app/service` / `app/router` / `app/router-schema` 的约定扩展业务功能，而不必修改框架本体。
 
 遵守这套分层和加载规则，才能避免“文件存在但没挂载”或“启动时路径错位”的问题。

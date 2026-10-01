@@ -139,14 +139,14 @@ module.exports = merge.smart(
 
         return {
           vue: require.resolve("vue"),
-          $sunsetPage: path.resolve(__dirname, "../../pages"),
-          $sunsetBoot: path.resolve(__dirname, "../../pages/boot.js"),
-          $sunsetCommon: path.resolve(__dirname, "../../pages/common"),
-          $sunsetCurl: path.resolve(__dirname, "../../pages/common/curl.js"),
-          $sunsetUtils: path.resolve(__dirname, "../../pages/common/utils.js"),
-          $sunsetWidgets: path.resolve(__dirname, "../../pages/widgets"),
-          $sunsetStore: path.resolve(__dirname, "../../pages/store"),
-          $sunsetAssert: path.resolve(__dirname, "../../pages/assert"),
+          $lumfallPage: path.resolve(__dirname, "../../pages"),
+          $lumfallBoot: path.resolve(__dirname, "../../pages/boot.js"),
+          $lumfallCommon: path.resolve(__dirname, "../../pages/common"),
+          $lumfallCurl: path.resolve(__dirname, "../../pages/common/curl.js"),
+          $lumfallUtils: path.resolve(__dirname, "../../pages/common/utils.js"),
+          $lumfallWidgets: path.resolve(__dirname, "../../pages/widgets"),
+          $lumfallStore: path.resolve(__dirname, "../../pages/store"),
+          $lumfallAssert: path.resolve(__dirname, "../../pages/assert"),
           $businessDashboardRouterConfig: fs.existsSync(
             businessDashboardRouterConfigPath,
           )
@@ -162,23 +162,23 @@ module.exports = merge.smart(
             ? businessSearchItemConfig
             : blankModulePath,
           // 业务组件
-          $sunsetHeaderContainer: path.resolve(
+          $lumfallHeaderContainer: path.resolve(
             __dirname,
             "../../pages/widgets/header-container/header-container.vue",
           ),
-          $sunsetSchemaForm: path.resolve(
+          $lumfallSchemaForm: path.resolve(
             __dirname,
             "../../pages/widgets/schema-form/schema-form.vue",
           ),
-          $sunsetSchemaSearchBar: path.resolve(
+          $lumfallSchemaSearchBar: path.resolve(
             __dirname,
             "../../pages/widgets/schema-search-bar/schema-search-bar.vue",
           ),
-          $sunsetSchemaTable: path.resolve(
+          $lumfallSchemaTable: path.resolve(
             __dirname,
             "../../pages/widgets/schema-table/schema-table.vue",
           ),
-          $sunsetSiderContainer: path.resolve(
+          $lumfallSiderContainer: path.resolve(
             __dirname,
             "../../pages/widgets/sider-container/sider-container.vue",
           ),

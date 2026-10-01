@@ -26,10 +26,10 @@
 </template>
 
 <script setup>
-import SchemaTable from "$sunsetSchemaTable";
+import SchemaTable from "$lumfallSchemaTable";
 import { inject, ref } from "vue";
 import { Modal } from "@arco-design/web-vue";
-import $curl from "$sunsetCurl";
+import $curl from "$lumfallCurl";
 import { Notification } from "@arco-design/web-vue";
 
 const emit = defineEmits(["operate"]);

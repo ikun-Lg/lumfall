@@ -38,11 +38,11 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import HeaderContainer from "$sunsetHeaderContainer";
+import HeaderContainer from "$lumfallHeaderContainer";
 import SubMenu from "./complex-view/sub-menu/sub-menu.vue";
-import { useMenuStore } from "$sunsetStore/menu.js";
-import { useProjectStore } from "$sunsetStore/project.js";
-import { dashboardPath } from "$sunsetPage/dashboard/route-path.js";
+import { useMenuStore } from "$lumfallStore/menu.js";
+import { useProjectStore } from "$lumfallStore/project.js";
+import { dashboardPath } from "$lumfallPage/dashboard/route-path.js";
 import { useRoute } from "vue-router";
 
 const route = useRoute();

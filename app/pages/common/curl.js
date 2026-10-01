@@ -12,7 +12,7 @@ const curl = async ({
   responseType = "json",
   errorMessage = "Network Error",
 }) => {
-  const signKey = "sunset";
+  const signKey = "lumfall";
   const st = Date.now();
 
   const dtoHeaders = {
@@ -22,7 +22,7 @@ const curl = async ({
   };
 
   // 项目列表页等无当前项目的场景 projectKey 为空，此时不能下发空的 project_key header
-  const projectKey = window.__SUNSET__?.projectKey;
+  const projectKey = window.__LUMFALL__?.projectKey;
 
   if (projectKey && url.indexOf("/api/project/") > -1) {
     dtoHeaders.project_key = projectKey;

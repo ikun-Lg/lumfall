@@ -1,6 +1,6 @@
-# Sunset 全栈框架
+# Lumfall 全栈框架
 
-Sunset 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载的服务端扩展、路由和控制器，以及基于 Vue 3 与 Webpack 的页面构建能力。框架代码位于 `sunset-core/` 和内置 `app/`；使用者在自己的项目中提供业务目录 `app/`、`config/` 和服务启动入口。
+Lumfall 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载的服务端扩展、路由和控制器，以及基于 Vue 3 与 Webpack 的页面构建能力。框架代码位于 `lumfall-core/` 和内置 `app/`；使用者在自己的项目中提供业务目录 `app/`、`config/` 和服务启动入口。
 
 ## 功能概览
 
@@ -17,16 +17,16 @@ Sunset 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载的
 
 ## 在业务项目中使用
 
-将 Sunset 安装为业务项目依赖。例如，在与本仓库相邻的本地业务项目中：
+将 Lumfall 安装为业务项目依赖。例如，在与本仓库相邻的本地业务项目中：
 
 ```sh
-pnpm add sunset
+pnpm add lumfall
 ```
 
 在业务项目入口显式启动服务：
 
 ```js
-const { serviceStart } = require("sunset");
+const { serviceStart } = require("lumfall");
 
 serviceStart({
 	name: "My application",
@@ -42,7 +42,7 @@ serviceStart({
 _ENV=local node server.js
 ```
 
-环境标识 `_ENV` 支持 `local`、`beta`、`prod`，缺省为 `local`。`NODE_ENV` 不控制 Sunset 的配置环境。
+环境标识 `_ENV` 支持 `local`、`beta`、`prod`，缺省为 `local`。`NODE_ENV` 不控制 Lumfall 的配置环境。
 
 ## 目录约定
 
@@ -152,19 +152,19 @@ module.exports = {
 
 ## 页面开发与构建
 
-页面放在业务项目的 `app/pages/<page-name>/`，Webpack 会发现 `entry.*.js` 作为页面入口，页面可通过 `/view/<page-name>` 访问。当前仓库提供页面脚手架；从 Sunset 仓库根目录运行可生成框架仓库自己的页面：
+页面放在业务项目的 `app/pages/<page-name>/`，Webpack 会发现 `entry.*.js` 作为页面入口，页面可通过 `/view/<page-name>` 访问。当前仓库提供页面脚手架；从 Lumfall 仓库根目录运行可生成框架仓库自己的页面：
 
 ```sh
 pnpm new-page dashboard
 pnpm new-page project-list --header
 ```
 
-脚手架以当前工作目录为目标；如果业务项目通过相邻目录安装 Sunset，也可从业务项目根目录执行 `node ../sunset/scripts/generate-page.js dashboard`（按实际安装路径调整）。
+脚手架以当前工作目录为目标；如果业务项目通过相邻目录安装 Lumfall，也可从业务项目根目录执行 `node ../lumfall/scripts/generate-page.js dashboard`（按实际安装路径调整）。
 
 业务项目可在自己的 `build.js` 中调用框架构建入口：
 
 ```js
-const { frontendBuild } = require("sunset");
+const { frontendBuild } = require("lumfall");
 
 frontendBuild(process.env._ENV);
 ```
@@ -184,7 +184,7 @@ frontendBuild(process.env._ENV);
 
 ## 仓库开发命令
 
-在 Sunset 仓库根目录安装依赖后，可使用：
+在 Lumfall 仓库根目录安装依赖后，可使用：
 
 | 命令 | 用途 |
 | --- | --- |

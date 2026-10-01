@@ -58,30 +58,30 @@ module.exports = {
     console.log(`[start] load extend done`);
     console.log(app.customExtend);
 
-    // global middleware: skip business one when identical to sunset's, else app.use registers twice
-    const sunsetMiddlewarePath = path.resolve(
+    // global middleware: skip business one when identical to lumfall's, else app.use registers twice
+    const lumfallMiddlewarePath = path.resolve(
       __dirname,
       `..${sep}app${sep}middleware.js`,
     );
     const businessMiddlewarePath = `${app.businessPath}${sep}middleware.js`;
 
     try {
-      if (fs.existsSync(sunsetMiddlewarePath)) {
-        require(sunsetMiddlewarePath)(app);
-        console.log(`[start] load sunset global middleware done`);
+      if (fs.existsSync(lumfallMiddlewarePath)) {
+        require(lumfallMiddlewarePath)(app);
+        console.log(`[start] load lumfall global middleware done`);
       } else {
-        console.warn(`[start] no sunset global middleware.js, skip`);
+        console.warn(`[start] no lumfall global middleware.js, skip`);
       }
     } catch (error) {
-      console.error("Failed to load sunset global middleware:", error);
+      console.error("Failed to load lumfall global middleware:", error);
     }
 
     try {
       if (!fs.existsSync(businessMiddlewarePath)) {
         console.warn(`[start] no global middleware.js, skip`);
-      } else if (businessMiddlewarePath === sunsetMiddlewarePath) {
+      } else if (businessMiddlewarePath === lumfallMiddlewarePath) {
         console.log(
-          `[start] global middleware.js is sunset built-in, skip duplicate`,
+          `[start] global middleware.js is lumfall built-in, skip duplicate`,
         );
       } else {
         require(businessMiddlewarePath)(app);

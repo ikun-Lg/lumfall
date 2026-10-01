@@ -18,12 +18,12 @@ const { camelCase } = require("./utils");
  *  => app.customExtend
  */
 module.exports = (app) => {
-  const sunsetDir = path.resolve(__dirname, "..", "..");
-  const sunsetExtendDir = path.join(sunsetDir, "app", "extend");
+  const lumfallDir = path.resolve(__dirname, "..", "..");
+  const lumfallExtendDir = path.join(lumfallDir, "app", "extend");
   const businessExtendDir = path.join(app.businessPath, "extend");
 
-  loadExtends(sunsetExtendDir);
-  if (path.resolve(sunsetExtendDir) !== path.resolve(businessExtendDir)) {
+  loadExtends(lumfallExtendDir);
+  if (path.resolve(lumfallExtendDir) !== path.resolve(businessExtendDir)) {
     loadExtends(businessExtendDir);
   }
 

@@ -698,7 +698,7 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 ## 8. 前端消费链路
 
-理解前端如何消费 DSL，有助于写出正确的配置。项目列表页 `/view/project-list` 及其 project API 由 `sunset-demo` 宿主应用提供；`/view/dashboard` 是 Sunset 的项目工作台页面，下述链路由宿主应用的 project 模块支持：
+理解前端如何消费 DSL，有助于写出正确的配置。项目列表页 `/view/project-list` 及其 project API 由 `lumfall-demo` 宿主应用提供；`/view/dashboard` 是 Lumfall 的项目工作台页面，下述链路由宿主应用的 project 模块支持：
 
 ```
 1. 浏览器访问 /view/dashboard/schema?projectKey=pdd&key=product
@@ -773,8 +773,8 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 ### 9.2 请求头
 
-- `s_t` + `s_sign`：curl.js 自动附带时间戳与签名（`md5("sunset_" + s_t)`），服务端校验签名并要求 `s_t` 距当前不超过 10 分钟，否则返回 `445`。
-- `project_key`：URL 以 `/api/project/` 开头时自动携带，取自 `window.__SUNSET__.projectKey`（服务端在 `entry.tpl` 注入）。**归属项目的接口必须带此头**（`project-handler` 中间件强制），例外名单：`/api/project/model_list`、`/api/project/list`。
+- `s_t` + `s_sign`：curl.js 自动附带时间戳与签名（`md5("lumfall_" + s_t)`），服务端校验签名并要求 `s_t` 距当前不超过 10 分钟，否则返回 `445`。
+- `project_key`：URL 以 `/api/project/` 开头时自动携带，取自 `window.__LUMFALL__.projectKey`（服务端在 `entry.tpl` 注入）。**归属项目的接口必须带此头**（`project-handler` 中间件强制），例外名单：`/api/project/model_list`、`/api/project/list`。
 
 ### 9.3 页面路由基址
 
@@ -849,7 +849,7 @@ module.exports = {
 
 ### 步骤三：无需注册，自动加载
 
-`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。在包含 project 模块的宿主应用（如 `sunset-demo`）中，重启服务后可通过以下 API 访问：
+`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。在包含 project 模块的宿主应用（如 `lumfall-demo`）中，重启服务后可通过以下 API 访问：
 
 | API                                    | 说明                                                                                   |
 | -------------------------------------- | -------------------------------------------------------------------------------------- |

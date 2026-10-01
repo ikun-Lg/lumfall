@@ -18,7 +18,7 @@ module.exports = (app) => {
         const sSign = ssign || s_sign;
         const st = stTs || s_t;
 
-        const signKey = 'sunset';
+        const signKey = 'lumfall';
         const signature = md5(`${signKey}_${st}`);
         app.logger.info(`[${method} ${path} signature ${signature}]`);
 

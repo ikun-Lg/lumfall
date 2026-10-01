@@ -19,15 +19,15 @@ const { camelCase } = require("./utils");
 module.exports = (app) => {
   app.middlewares = {};
 
-  const sunsetMiddlewareDir = path.join(
+  const lumfallMiddlewareDir = path.join(
     __dirname,
     `..${path.sep}..${path.sep}app${path.sep}middleware`,
   );
-  const sunsetFiles = glob.sync("**/*.js", { cwd: sunsetMiddlewareDir });
-  sunsetFiles.forEach((file) => handleFile(file, sunsetMiddlewareDir));
+  const lumfallFiles = glob.sync("**/*.js", { cwd: lumfallMiddlewareDir });
+  lumfallFiles.forEach((file) => handleFile(file, lumfallMiddlewareDir));
 
   const businessMiddlewareDir = path.join(app.businessPath, "middleware");
-  if (path.resolve(sunsetMiddlewareDir) !== path.resolve(businessMiddlewareDir)) {
+  if (path.resolve(lumfallMiddlewareDir) !== path.resolve(businessMiddlewareDir)) {
     const businessFiles = glob.sync("**/*.js", { cwd: businessMiddlewareDir });
     businessFiles.forEach((file) => handleFile(file, businessMiddlewareDir));
   }

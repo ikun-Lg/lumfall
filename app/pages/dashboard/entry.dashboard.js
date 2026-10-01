@@ -1,4 +1,4 @@
-import boot from "$sunsetBoot";
+import boot from "$lumfallBoot";
 import Dashboard from "./dashboard.vue";
 import businessDashboardRouterConfig from "$businessDashboardRouterConfig";
 

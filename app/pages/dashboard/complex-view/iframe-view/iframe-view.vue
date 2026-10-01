@@ -11,7 +11,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useMenuStore } from "$sunsetStore/menu.js";
+import { useMenuStore } from "$lumfallStore/menu.js";
 import { IconExclamationCircleFill } from "@arco-design/web-vue/es/icon";
 
 const route = useRoute();

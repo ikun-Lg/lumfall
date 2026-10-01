@@ -18,13 +18,13 @@ const KoaRouter = require("koa-router");
  */
 module.exports = (app) => {
   const router = new KoaRouter();
-  const sunsetDir = path.resolve(__dirname, "..", "..");
-  const sunsetRouterDir = path.join(sunsetDir, "app", "router");
+  const lumfallDir = path.resolve(__dirname, "..", "..");
+  const lumfallRouterDir = path.join(lumfallDir, "app", "router");
   const businessRouterDir = path.join(app.businessPath, "router");
 
   loadRoutes(businessRouterDir);
-  if (path.resolve(sunsetRouterDir) !== path.resolve(businessRouterDir)) {
-    loadRoutes(sunsetRouterDir);
+  if (path.resolve(lumfallRouterDir) !== path.resolve(businessRouterDir)) {
+    loadRoutes(lumfallRouterDir);
   }
 
   function loadRoutes(routerDir) {

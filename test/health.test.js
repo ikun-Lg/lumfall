@@ -1,6 +1,6 @@
 const assert = require("assert");
 const supertest = require("supertest");
-const sunsetCore = require("../sunset-core");
+const lumfallCore = require("../lumfall-core");
 
 describe("health endpoints", function () {
   this.timeout(30000);
@@ -9,7 +9,7 @@ describe("health endpoints", function () {
   let request;
 
   before(() => {
-    app = sunsetCore.start({ name: "Sunset Health Test", homePath: "/" });
+    app = lumfallCore.start({ name: "Lumfall Health Test", homePath: "/" });
     request = supertest(app.callback());
   });
 

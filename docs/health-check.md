@@ -1,12 +1,12 @@
 # 健康检查
 
-Sunset 提供两个不需要业务鉴权的 HTTP 探针：
+Lumfall 提供两个不需要业务鉴权的 HTTP 探针：
 
 - `GET /health/live`：进程存活检查。只确认 Koa 能响应，不检查数据库等依赖。
 - `GET /health/ready`：流量就绪检查。并行执行已注册的应用依赖探针，全部成功返回 HTTP 200，任意探针失败或超时返回 HTTP 503。
 - `/view/health`：人工查看 live/ready 状态及各依赖探针结果的页面。
 
-两个接口设置 `Cache-Control: no-store`。响应只暴露探针名称和状态，不返回错误对象、连接串或异常信息。没有注册依赖探针时，readiness 表示 Sunset 已完成启动。
+两个接口设置 `Cache-Control: no-store`。响应只暴露探针名称和状态，不返回错误对象、连接串或异常信息。没有注册依赖探针时，readiness 表示 Lumfall 已完成启动。
 
 ## 注册依赖探针
 
