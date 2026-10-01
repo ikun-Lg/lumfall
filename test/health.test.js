@@ -7,9 +7,20 @@ describe("health endpoints", function () {
 
   let app;
   let request;
+  let previousPort;
 
-  before(() => {
+  before(async () => {
+    previousPort = process.env.PORT;
+    process.env.PORT = "0";
     app = lumfallCore.start({ name: "Lumfall Health Test", homePath: "/" });
+    await new Promise((resolve, reject) => {
+      if (app.server.listening) {
+        resolve();
+        return;
+      }
+      app.server.once("listening", resolve);
+      app.server.once("error", reject);
+    });
     request = supertest(app.callback());
   });
 
@@ -80,11 +91,16 @@ describe("health endpoints", function () {
     }
   });
 
-  after((done) => {
-    if (app && app.server) {
-      app.server.close(done);
-      return;
+  after(async () => {
+    if (app?.server?.listening) {
+      await new Promise((resolve, reject) =>
+        app.server.close((error) => (error ? reject(error) : resolve())),
+      );
     }
-    done();
+    if (previousPort === undefined) {
+      delete process.env.PORT;
+    } else {
+      process.env.PORT = previousPort;
+    }
   });
 });

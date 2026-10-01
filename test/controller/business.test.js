@@ -1,78 +1,75 @@
 const assert = require("assert");
 const supertest = require("supertest");
-const md5 = require("md5");
 const lumfallCore = require("../../lumfall-core");
 
-const signKey = "lumfall";
-const st = Date.now();
-
-describe("测试商品业务接口", function () {
-  this.timeout(60000);
+describe("framework project APIs", function () {
+  this.timeout(30000);
 
   let app;
   let request;
-  let createdProductId;
+  let previousPort;
 
-  it("启动服务", async () => {
-    app = await lumfallCore.start();
+  before(async () => {
+    previousPort = process.env.PORT;
+    process.env.PORT = "0";
+    app = lumfallCore.start({ name: "Project API Test", homePath: "/" });
+    await new Promise((resolve, reject) => {
+      if (app.server.listening) {
+        resolve();
+        return;
+      }
+      app.server.once("listening", resolve);
+      app.server.once("error", reject);
+    });
     request = supertest(app.callback());
   });
 
-  it("POST /api/project/product 创建商品", async () => {
-    const res = await request
-      .post("/api/project/product")
-      .set("s_t", st)
-      .set("s_sign", md5(`${signKey}_${st}`))
-      .set("project_key", "test-project")
-      .send({ productName: "新增测试商品", price: 12.5, inventory: 20 });
-
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.success, true);
-    assert.strictEqual(res.body.data.productName, "新增测试商品");
-    assert.strictEqual(res.body.data.price, 12.5);
-    assert.strictEqual(res.body.data.inventory, 20);
-    assert.match(res.body.data.productId, /^P\d{6}$/);
-    createdProductId = res.body.data.productId;
-  });
-
-  it("GET /api/project/product 获取单个商品", async () => {
-    const res = await request
-      .get("/api/project/product")
-      .query({ productId: createdProductId })
-      .set("s_t", st)
-      .set("s_sign", md5(`${signKey}_${st}`))
-      .set("project_key", "test-project");
-
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.success, true);
-    assert.strictEqual(res.body.data.productId, createdProductId);
-    assert.strictEqual(res.body.data.productName, "新增测试商品");
-  });
-
-  it("PUT /api/project/product 更新商品", async () => {
-    const res = await request
-      .put("/api/project/product")
-      .set("s_t", st)
-      .set("s_sign", md5(`${signKey}_${st}`))
-      .set("project_key", "test-project")
-      .send({
-        productId: createdProductId,
-        productName: "更新后的测试商品",
-        price: 18.5,
-        inventory: 35,
-      });
-
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.success, true);
-    assert.strictEqual(res.body.data.productId, createdProductId);
-    assert.strictEqual(res.body.data.productName, "更新后的测试商品");
-    assert.strictEqual(res.body.data.price, 18.5);
-    assert.strictEqual(res.body.data.inventory, 35);
-  });
-
-  after(() => {
-    if (app && app.server) {
-      app.server.close();
+  after(async () => {
+    if (app?.server?.listening) {
+      await new Promise((resolve, reject) =>
+        app.server.close((error) => (error ? reject(error) : resolve())),
+      );
     }
+    if (previousPort === undefined) {
+      delete process.env.PORT;
+    } else {
+      process.env.PORT = previousPort;
+    }
+  });
+
+  it("GET /api/project/model_list returns the discovered model list", async () => {
+    const response = await request.get("/api/project/model_list");
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.success, true);
+    assert.deepStrictEqual(response.body.data, []);
+  });
+
+  it("GET /api/project/list accepts a project filter and returns a list", async () => {
+    const response = await request
+      .get("/api/project/list")
+      .query({ projectKey: "store-a" });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.success, true);
+    assert.deepStrictEqual(response.body.data, []);
+  });
+
+  it("GET /api/project requires projectKey according to its schema", async () => {
+    const response = await request.get("/api/project");
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.success, false);
+    assert.strictEqual(response.body.code, 442);
+  });
+
+  it("GET /api/project reports a missing project after valid input", async () => {
+    const response = await request
+      .get("/api/project")
+      .query({ projectKey: "missing-project" });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.success, false);
+    assert.strictEqual(response.body.code, 50000);
   });
 });
