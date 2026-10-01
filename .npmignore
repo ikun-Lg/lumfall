@@ -1,0 +1,16 @@
+.git/
+.github/
+.idea/
+.omo/
+.opencode/
+logs/
+node_modules/
+coverage/
+.vscode/
+.env
+.DS_Store
+*.log
+.gitignore
+.npmrc
+AGENTS.md
+SKILL.md

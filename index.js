@@ -4,6 +4,13 @@ const FEBuildDev = require("./app/webpack/dev.js");
 const FEBuildProd = require("./app/webpack/prod.js");
 
 module.exports = {
+  Controller: {
+    Base: require("./app/controller/base.js"),
+  },
+  Service: {
+    Base: require("./app/service/base.js"),
+  },
+
   frontendBuild(env) {
     if (env === "local") {
       FEBuildDev();
