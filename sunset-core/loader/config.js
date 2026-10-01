@@ -5,8 +5,8 @@ const fs = require("fs");
  * config loader
  * @param {object} app koa instance
  *
- * config local/beta/prod, read different config env.config
- * env.config -> default.config -> app.config
+ * config local/beta/prod, read different config env config
+ * env config -> default config -> app config
  *
  * default config: config/config.default.js
  * local config: config/config.local.js
@@ -14,33 +14,45 @@ const fs = require("fs");
  * prod config: config/config.prod.js
  */
 module.exports = (app) => {
-  const configDir = path.join(app.baseDir, "config");
-
   app.config = {};
 
-  if (!fs.existsSync(configDir)) {
-    return;
-  }
+  const frameworkConfigDir = path.resolve(__dirname, "..", "..", "config");
+  const businessConfigDir = path.join(app.baseDir || process.cwd(), "config");
 
-  // load a config file, support factory pattern: module.exports = (app) => ({...})
-  const load = (name) => {
-    const file = path.join(configDir, `config.${name}.js`);
-    if (!fs.existsSync(file)) {
+  const loadConfigFile = (filePath) => {
+    if (!fs.existsSync(filePath)) {
       return {};
     }
-    const mod = require(file);
+
+    const mod = require(filePath);
     const config = typeof mod === "function" ? mod(app) : mod;
     if (!config || typeof config !== "object" || Array.isArray(config)) {
       throw new Error(
-        `[config] config.${name}.js must export a plain object, got ${
+        `[config] ${path.basename(filePath)} must export a plain object, got ${
           Array.isArray(config) ? "array" : typeof config
         }`,
       );
     }
+
     return config;
   };
 
-  // env-specific config overrides default config
+  const loadConfig = (name, configDir) => {
+    const file = path.join(configDir, `config.${name}.js`);
+    return loadConfigFile(file);
+  };
+
+  const frameworkDefaultConfig = loadConfig("default", frameworkConfigDir);
+  const businessDefaultConfig = loadConfig("default", businessConfigDir);
   const env = typeof app.env?.get === "function" ? app.env.get() : "local";
-  app.config = { ...load("default"), ...load(env) };
+
+  const frameworkEnvConfig = loadConfig(env, frameworkConfigDir);
+  const businessEnvConfig = loadConfig(env, businessConfigDir);
+
+  app.config = {
+    ...frameworkDefaultConfig,
+    ...businessDefaultConfig,
+    ...frameworkEnvConfig,
+    ...businessEnvConfig,
+  };
 };

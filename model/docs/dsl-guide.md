@@ -49,7 +49,7 @@ model/
 | `name`  | `string` | 是   | Model 显示名称（如 `"电商系统"`）              |
 | `menu`  | `array`  | 是   | 默认菜单数组，定义该 Model 下所有 Project 共享的菜单骨架 |
 
-### 示例（当前实际 `model/business/model.js`，含 schema 模块）
+### 示例（当前实际 `model/business/model.js`，含 schema + 动态表单/详情）
 
 ```js
 // model/business/model.js
@@ -75,22 +75,46 @@ module.exports = {
                 ellipsis: true,
                 tooltip: true,
               },
+              editFormOption: {
+                componentType: "input",
+                disabled: true,
+              },
+              detailPanelOption: {},
             },
             productName: {
               type: "string",
               label: "商品名称",
+              maxLength: 10,
+              minLength: 3,
               tableOption: { width: 200 },
               searchOption: {
                 componentType: "input",
                 default: "",
                 placeholder: "请输入商品名称",
                 allowClear: true,
+                api: "/api/project/productEnum/list",
               },
+              createFormOption: {
+                componentType: "input",
+                default: "10086",
+              },
+              editFormOption: {
+                componentType: "input",
+                // visible: false,
+              },
+              detailPanelOption: {},
             },
             productType: {
               type: "string",
               label: "商品类型",
-              tableOption: { width: 200 },
+              tableOption: {
+                width: 160,
+                enumList: [
+                  { label: "电子产品", value: "electronics" },
+                  { label: "服装鞋帽", value: "clothing" },
+                  { label: "家居用品", value: "home" },
+                ],
+              },
               searchOption: {
                 componentType: "dynamicSelect",
                 default: "",
@@ -100,7 +124,13 @@ module.exports = {
             status: {
               type: "string",
               label: "上架状态",
-              tableOption: { width: 200 },
+              tableOption: {
+                width: 120,
+                enumList: [
+                  { label: "上架", value: "1" },
+                  { label: "下架", value: "0" },
+                ],
+              },
               searchOption: {
                 componentType: "select",
                 default: "",
@@ -109,31 +139,77 @@ module.exports = {
                   { label: "下架", value: "0" },
                 ],
               },
+              detailPanelOption: {},
             },
             price: {
               type: "number",
               label: "价格",
+              maximum: 1000,
+              minimum: 30,
               tableOption: { width: 200 },
+              createFormOption: { componentType: "inputNumber" },
+              editFormOption: { componentType: "inputNumber" },
+              detailPanelOption: {},
+            },
+            inventory: {
+              type: "number",
+              label: "库存",
+              tableOption: { width: 200 },
+              createFormOption: {
+                componentType: "select",
+                enumList: [
+                  { label: "全部", value: -1 },
+                  { label: "100", value: 100 },
+                ],
+              },
+              editFormOption: {
+                componentType: "select",
+                enumList: [
+                  { label: "全部", value: -1 },
+                  { label: "100", value: 100 },
+                ],
+              },
+              detailPanelOption: {},
             },
             createTime: {
               type: "string",
               label: "创建时间",
-              tableOption: { width: 200 },
+              tableOption: { width: 180 },
               searchOption: {
                 componentType: "dateRange",
                 default: [],
                 showTime: true,
                 valueFormat: "YYYY-MM-DD HH:mm:ss",
               },
+              detailPanelOption: {},
             },
           },
+          required: ["productName"],
         },
         tableConfig: {
           headerButtons: [
-            { label: "新增商品", eventKey: "showComponent", type: "outline" },
+            {
+              label: "新增商品",
+              eventKey: "showComponent",
+              type: "outline",
+              eventOption: {
+                comName: "createForm",
+              },
+            },
           ],
           rowButtons: [
-            { label: "修改", eventKey: "edit", type: "warning" },
+            {
+              label: "查看",
+              eventKey: "showComponent",
+              type: "primary",
+              eventOption: { comName: "detailPanel" },
+            },
+            {
+              label: "修改",
+              eventKey: "showComponent",
+              type: "warning",
+              eventOption: { comName: "editForm" },
+            },
             {
               label: "删除",
               eventKey: "delete",
@@ -145,6 +221,21 @@ module.exports = {
               },
             },
           ],
+          componentConfig: {
+            createForm: {
+              title: "新增商品",
+              saveBtnText: "新增商品",
+            },
+            editForm: {
+              mainKey: "productId",
+              title: "修改商品",
+              saveBtnText: "修改商品",
+            },
+            detailPanel: {
+              mainKey: "productId",
+              title: "商品详情",
+            },
+          },
         },
       },
     },
@@ -166,7 +257,7 @@ module.exports = {
 };
 ```
 
-> schema 模块各字段的完整规则见 [第 6 节：schema 模块 DSL](#6-schema-模块-dslmoduletype-schema)。
+> schema 模块各字段的完整规则见 [第 6 节：schema 模块 DSL](#6-schema-模块-dslmoduletype-schema)；其中动态表单/详情（`createFormOption`/`editFormOption`/`detailPanelOption`、`componentConfig`）见 6.5 与 6.8 节。
 
 ### 作用
 
@@ -332,7 +423,7 @@ module.exports = {
 | `"iframe"` | `/view/dashboard/iframe`        | `iframeConfig` | iframe 嵌入页，src 为 `iframeConfig.path`             |
 | `"schema"` | `/view/dashboard/schema`        | `schemaConfig` | schema 驱动页面（搜索栏 + 表格 + 分页）               |
 
-> **sider 子菜单路由说明**：当 `moduleType: "sider"` 时，头部菜单点击跳转到 `/view/dashboard/sider`，sider 组件内的子菜单点击会跳转到 `/sider/<子模块路由>`（如 `/sider/iframe`、`/sider/schema`、`/sider/todo`），并在 query 中额外携带 `siderKey` 参数标识当前选中的子菜单项。sider 路由**不支持 custom 之外的完整路径**——`custom` 子项拼接到 `/sider` 后（如 `/sider/taobao/cpopon`），由 `:chapters+` 通配路由兜底渲染 sider-view。
+> **sider 子菜单路由说明**：当 `moduleType: "sider"` 时，头部菜单点击跳转到 `/view/dashboard/sider`，sider 组件内的子菜单点击会跳转到 `/sider/<子模块路由>`（如 `/sider/iframe`、`/sider/schema`、`/sider/todo`），并在 query 中额外携带 `siderKey` 参数标识当前选中的子菜单项。`custom` 子项的 `customConfig.path` 会**原样拼接**到 `/sider` 后，因此**必须以 `/` 开头**（如 `path: "/todo"` → `/sider/todo`）；只有命中 `/sider` 已注册子路由（`/iframe`、`/schema`、`/todo`）的路径右侧才有内容，其余路径由 `/sider/:chapters+` 通配路由兜底渲染 sider-view，但内容区为空。**不带前导斜杠的 path（如 `"taobao/cpopon"`）会拼出非法路由 `/sidertaobao/cpopon`，点击后无法跳转**——当前 `model/business/project/taobao.js` 即存在此问题，配置时务必避免。
 
 ---
 
@@ -380,11 +471,17 @@ schema 模块是本系统的核心形态：由 JSON-Schema 驱动渲染 **搜索
   menuType: "module",
   moduleType: "schema",
   schemaConfig: {
-    api: "/api/project/product",  // 接口基址（不是完整列表地址，见 6.5 接口契约）
-    schema: { ... },              // 字段 schema，驱动搜索栏与表格列
-    tableConfig: { ... },         // 表头按钮 + 行按钮
-    searchConfig: {},             // 预留，暂未消费
-    components: {},               // 预留，暂未消费
+    api: "/api/project/product",  // 接口基址（不是完整列表地址，见 6.6 接口契约）
+    schema: { ... },              // 字段 schema，驱动搜索栏/表格列/表单/详情（见 6.2）
+    tableConfig: {
+      headerButtons: [...],       // 表头按钮（见 6.5）
+      rowButtons: [...],          // 行按钮（见 6.5）
+      componentConfig: { ... },   // 动态组件注册：createForm / editForm / detailPanel（见 6.5）
+    },
+    searchConfig: {},             // 预留：随 schemaViewData 透传，前端暂未消费
+    // 注意：动态组件的 schema 由 tableConfig.componentConfig 派生
+    // （components = { comName: { schema, config } }，见 schema-view/hook/schema.js），
+    // schemaConfig 顶层不要手写 components 字段
   },
 }
 ```
@@ -409,91 +506,148 @@ schema: {
 
 **关键规则**（由 `schema-view/hook/schema.js` 的 `buildDtoSchema` 实现）：
 
+- `buildDtoSchema` 是**通用机制**：按 `${comName}Option` 匹配字段——`tableOption`、`searchOption`、`createFormOption`、`editFormOption`、`detailPanelOption` 全部走同一套逻辑，只是消费方不同。
 - 配置了 `tableOption` 的字段才出现在表格中；配置了 `searchOption` 的字段才出现在搜索栏中。两者互相独立，同一字段可以只配其一。
-- 合并后的字段会挂到 `option` 属性上：表格列收到 `option = tableOption`，搜索项收到 `option = searchOption`。
-- **URL query 预填搜索值**：若路由 query 中存在与字段同名的参数（如 `?productName=手机`），会覆盖该搜索项的 `option.default`，实现"从别处跳转过来带着搜索条件"。
+- 合并后的字段会挂到 `option` 属性上：表格列收到 `option = tableOption`，搜索项收到 `option = searchOption`；其余非 `xxxOption` 的键（`type`/`label`/约束字段等）原样保留。
+- **`schema.required` 数组自动注入**：字段名出现在 `schema.required` 中时，其 dto `option` 会被注入 `required: true`（表单必填校验与红星，见 6.8），不要在各个 option 里手写。
+- **URL query 预填搜索值**：若路由 query 中存在与字段同名的参数（如 `?productName=手机`），会覆盖该搜索项的 `option.default`，实现"从别处跳转过来带着搜索条件"。仅对标量组件（`input`/`select`/`dynamicSelect`）生效——`dateRange` 的重置逻辑忽略 `default`，预填无效。
 
 ### 6.3 `tableOption` — 表格列配置
 
-透传给 arco 的 `<a-table-column>`（`v-bind`），因此所有标准 arco-table-column 配置（`width`、`ellipsis`、`tooltip`、`align`、`fixed` 等）均可直接使用，另有两个扩展字段：
+透传给 arco 的 `<a-table-column>`（`v-bind`），因此所有标准 arco-table-column 配置（`width`、`ellipsis`、`tooltip`、`align`、`fixed` 等）均可直接使用。另有三个扩展字段（由 `schema-table` 消费）：
 
-| 字段      | 类型      | 说明                                             |
-| --------- | --------- | ------------------------------------------------ |
-| `toFixed` | `number`  | 数字保留 N 位小数（前端对返回数据做格式化）      |
-| `visible` | `boolean` | 设为 `false` 时该列不渲染（字段仍参与搜索/数据） |
+| 字段       | 类型      | 说明                                                       |
+| ---------- | --------- | ---------------------------------------------------------- |
+| `enumList` | `array`   | 枚举标签：项为 `{label, value}`，命中枚举值的单元格渲染为彩色 `<a-tag>`（颜色按索引循环取色），未命中显示原值 |
+| `toFixed`  | `number`  | 数字保留 N 位小数（前端对返回数据做格式化）                |
+| `visible`  | `boolean` | 设为 `false` 时该列不渲染（字段仍参与搜索/数据）           |
+
+> 所有列默认带 `ellipsis: true, tooltip: true`（防止长文本撑破列宽），`tableOption` 中的同名配置可覆盖默认值。
 
 ### 6.4 `searchOption` — 搜索项配置
 
 搜索项组件注册在 `app/pages/widgets/schema-search-bar/complex-view/search-item-config.js`，通过 `componentType` 选择，其余配置透传给对应的 arco 组件（`v-bind`）：
 
-| `componentType`  | arco 组件        | 额外字段                                        | 搜索值形状                        |
-| ---------------- | ---------------- | ----------------------------------------------- | --------------------------------- |
-| `"input"`        | `a-input`        | 无（`placeholder`、`allowClear` 等直接透传）    | 标量，如 `{"productName": "xx"}`  |
-| `"select"`       | `a-select`       | `enumList`: 静态选项数组，项为 `{label, value}` | 标量                              |
+| `componentType`  | arco 组件        | 额外字段                                        | 搜索值形状                                        |
+| ---------------- | ---------------- | ----------------------------------------------- | ------------------------------------------------- |
+| `"input"`        | `a-input`        | 无（`placeholder`、`allowClear` 等直接透传）    | 标量，如 `{"productName": "xx"}`                  |
+| `"select"`       | `a-select`       | `enumList`: 静态选项数组，项为 `{label, value}` | 标量                                              |
 | `"dynamicSelect"`| `a-select`       | `api`: 选项接口地址，挂载后请求拉取，响应 `data` 须为 `[{label, value}]` | 标量 |
-| `"dateRange"`    | `a-range-picker` | `valueFormat`: 选中值格式（如 `"YYYY-MM-DD HH:mm:ss"`），建议配合 `showTime: true` | 数组 `[start, end]` |
+| `"dateRange"`    | `a-range-picker` | `valueFormat`: 选中值格式（如 `"YYYY-MM-DD HH:mm:ss"`），建议配合 `showTime: true` | 拆为 `<fieldKey>_start` / `<fieldKey>_end` 两个参数 |
 
-通用字段：
+通用字段与空值语义：
 
-- `default`：初始/重置值。`input`/`select`/`dynamicSelect` 用标量（`""` 表示不选），`dateRange` 用数组（`[]`）。
-- 任一组件未选值时，该字段不会出现在搜索请求中（`getValue()` 返回 `{}`）。
+- `default`：初始/重置值。`input`/`select`/`dynamicSelect` 用标量（建议 `""` 表示不选）；`select`/`dynamicSelect` 未配置 `default` 时会**回退选中第一个枚举值**，因此建议始终显式配置 `default: ""`；`dateRange` 的重置值恒为 `[]`（组件忽略 `default`）。
+- **空值语义**：`getValue()` 只在组件值为 `undefined` 时省略该字段；`""`（含 `default: ""`）会原样下发。即首次加载和清空输入框后，请求里可能带空字符串参数，**后端需把 `""` 视为「不过滤」**。
+- **dateRange 下发格式**：选中后该字段被拆成 `<fieldKey>_start` 与 `<fieldKey>_end` 两个 query 参数，值固定为 `YYYY-MM-DD HH:mm:ss` 字符串（组件内用 moment 格式化，与 `valueFormat` 无关）；未选值时两个参数都不下发。
 
-### 6.5 `tableConfig` — 按钮配置
+### 6.5 `tableConfig` — 按钮与动态组件配置
 
-#### headerButtons（表头按钮，渲染在表格上方右侧）
+#### headerButtons / rowButtons 通用结构
+
+每项透传给 `<a-button>`。`eventKey` 决定点击行为：
+
+| `eventKey`       | 内置行为                                                                 | 触发位置       | `eventOption`                                                                                       |
+| ---------------- | ------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------- |
+| `"delete"`       | 确认框 → `DELETE <api>`（body 为 `{ <参数名>: <值> }`）→ 成功后刷新表格 | 仅行按钮有意义 | `params`: 目前**只取第一个键值对**，取值语法 `"schema::<fieldKey>"` 表示从行数据取字段值             |
+| `"showComponent"`| 打开 `comName` 对应的动态组件抽屉（见下方 componentConfig）              | 表头/行按钮均可 | `comName`: `createForm` / `editForm` / `detailPanel`（**字段名是 `comName`，不是 `componentName`**） |
+| 其他（如 `edit`）| 无内置行为，向上 emit `operate`（table-panel → schema-view 的 `onTableOperate`），可扩展 | —      | —                                                                                                    |
+
+`showComponent` 细节：schema-view 渲染 componentConfig 注册的组件并收集 ref，点击后按 `eventOption.comName` 匹配组件暴露的 `name`，调用其 `show(rowData)`（表头按钮无 rowData；`createForm` 的 `show` 不接收参数）。组件保存/关闭成功后 emit `command`，目前仅处理 `loadTableData`（刷新表格）。
+
+- 表头按钮渲染在表格上方右侧，`type` 直接映射 `<a-button>` 的 `type`（如 `outline`）。
+- 行按钮渲染在表格最右侧固定的「操作」列，固定渲染为 text 按钮，`type` 映射为 `status`（状态色）。
+- 操作列宽度自动估算：`30 + Σ(按钮 label 字数 × 14 + 26)`，未配置按钮时为 50，无需配置。
+
+#### componentConfig（动态组件注册，位于 `tableConfig` 下）
 
 ```js
-headerButtons: [
-  { label: "新增商品", eventKey: "showComponent", type: "outline" },
-]
-```
-
-每项透传给 `<a-button>`（`type` 映射按钮状态色）。`eventKey` 目前无内置行为，点击事件会向上 emit（`table-panel → schema-view` 的 `onTableOperate`），可在此接入自定义逻辑。
-
-#### rowButtons（行按钮，渲染在表格最右侧固定的「操作」列）
-
-```js
-rowButtons: [
-  { label: "修改", eventKey: "edit", type: "warning" },
-  {
-    label: "删除",
-    eventKey: "delete",
-    type: "danger",
-    eventOption: {
-      params: {
-        productId: "schema::productId",   // 参数名: "schema::<行字段名>"
-      },
-    },
+tableConfig: {
+  componentConfig: {
+    createForm:  { title: "", saveBtnText: "" },              // 新增表单（a-drawer，保存 POST <api>）
+    editForm:    { mainKey: "", title: "", saveBtnText: "" }, // 编辑表单（GET 回显，保存 PUT <api>）
+    detailPanel: { mainKey: "", title: "" },                  // 详情抽屉（GET 回显，只读）
   },
-]
+}
 ```
 
-- `eventKey: "delete"` 有内置实现：弹出确认框 → `DELETE <api>`，请求体为 `{ <参数名>: <行数据中的字段值> }` → 成功后刷新表格。**目前只取 `params` 的第一个键值对**，配置多个参数时其余会被忽略。
-- `eventOption.params` 的取值语法：`"schema::<fieldKey>"` 表示从当前行数据（`rowData`）中取该字段值。
-- 其他 `eventKey`（如 `edit`、`showComponent`）无内置行为，点击后向上 emit（`operate` 事件），可在 `schema-view` 层扩展。
-- 操作列宽度按所有按钮 `label` 字数自动估算，无需配置。
+- key 固定为 `createForm` / `editForm` / `detailPanel`（前端组件注册表 `schema-view/components/component-config.js` 只有这三个；未注册的 key 不渲染）。
+- `mainKey`：行数据主键字段名（如 `"productId"`）。editForm/detailPanel 用它 `GET <api>?<mainKey>=<值>` 回显单条数据，editForm 保存时 PUT body 会带上 `{ [mainKey]: 主键值 }`。**未配置 mainKey 时编辑/详情无法工作**。
+- 组件以 a-drawer（宽 550）呈现：标题取 `title`（`createForm`/`detailPanel` 有默认值「创建」/「详情」），保存按钮文案取 `saveBtnText`（默认「保存」）。
+- 表单项字段由各字段的 `xxxOption` 决定，见 6.8。
 
 ### 6.6 后端接口契约
 
-schema 模块对 `schemaConfig.api` 有固定调用方式，后端需实现：
+schema 模块对 `schemaConfig.api` 有固定调用方式，后端需实现（按前端实际用到的能力取舍）：
 
-| 调用              | 方法     | 入参                                                      | 响应                                                                 |
-| ----------------- | -------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
-| 查询列表          | `GET`    | `<api>/list`，query: 搜索字段 + `page` + `pageSize`        | `{ success, data: [...], metadata: { total } }`，`total` 必须存在    |
-| 删除行（配了 delete 按钮时） | `DELETE` | `<api>`，body: `{ <参数名>: <值> }`                       | `{ success }`                                                        |
+| 调用             | 方法     | 入参                                                          | 响应                                        | 调用方                    |
+| ---------------- | -------- | ------------------------------------------------------------- | -------------------------------------------- | ------------------------- |
+| 查询列表         | `GET`    | `<api>/list`，query: 搜索字段 + `page` + `pageSize`（默认 50） | `{ success, data: [...], metadata: { total } }`，`total` 必须存在 | schema-table |
+| 单条查询         | `GET`    | `<api>`，query: `{ [mainKey]: 值 }`                           | `{ success, data: {...} }`                   | editForm / detailPanel 回显 |
+| 新增             | `POST`   | `<api>`，body: createForm 表单值                              | `{ success }`                                | createForm                |
+| 更新             | `PUT`    | `<api>`，body: `{ [mainKey]: 值, ...editForm 表单值 }`        | `{ success }`                                | editForm                  |
+| 删除（配了 delete 按钮时） | `DELETE` | `<api>`，body: `{ <参数名>: <值> }`                 | `{ success }`                                | table-panel               |
+| 枚举选项         | `GET`    | 搜索项 `dynamicSelect` 配置的 `api` 原样请求                  | `{ success, data: [{label, value}] }`        | dynamic-select            |
 
-> 注意 `api` 是**基址**：列表接口由前端自动拼接 `/list` 后缀。搜索字段值原样并入 query（`dateRange` 是 `[start, end]` 数组，后端按需解析）。
+> 注意 `api` 是**基址**：列表接口由前端自动拼接 `/list` 后缀。搜索字段值原样并入 query（`dateRange` 拆为 `<field>_start`/`<field>_end`，空字符串参数表示「不过滤」，见 6.4）。
+>
+> **参考实现**：`app/controller/business.js` + `app/service/business.js` + `app/router/business.js` + `app/router-schema/business.js`（内存 mock 数据，覆盖以上全部方法）。
 
 ### 6.7 搜索数据流
 
 ```
 schema-search-bar（收集各搜索项 getValue）
-  → search-panel（@search）
+  → search-panel（@load / @search / @reset 统一转为 search 事件）
   → schema-view（apiParams = searchValObj，provide 给 table-panel）
   → schema-table（watch apiParams → 重置分页 → GET <api>/list）
 ```
 
-点「查询」立即触发；「重置」把所有搜索项恢复为 `default` 后仅清空 `apiParams`（重新拉全量）。
+- 首次挂载：所有搜索项加载完成后通过 `@load` **自动触发一次带默认值的查询**（含 URL query 预填值）。
+- 点「查询」：立即按当前值触发。
+- 「重置」：各搜索项恢复为 `default` 后清空 `apiParams`（重新拉全量）。
+
+### 6.8 动态表单与详情（`createFormOption` / `editFormOption` / `detailPanelOption`）
+
+字段配置了对应的 `xxxOption` 后，会进入同名动态组件的 schema（由 `buildDtoSchema` 按 `${comName}Option` 拆出，见 6.2）：
+
+```js
+productName: {
+  type: "string",
+  label: "商品名称",
+  minLength: 3,                 // JSON-Schema 约束：表单 ajv 校验 + placeholder 提示
+  maxLength: 10,
+  createFormOption: {           // 新增表单项
+    componentType: "input",
+    default: "10086",
+  },
+  editFormOption: {             // 编辑表单项
+    componentType: "input",
+    disabled: true,             // 如主键字段编辑时禁用
+    // visible: false,          // 隐藏该项（v-show，字段仍随 getValue 提交）
+  },
+  detailPanelOption: {},        // 详情展示：配置即以「label: value」行展示该字段
+},
+```
+
+表单项组件注册在 `app/pages/widgets/schema-form/form-item-config.js`：
+
+| `componentType`   | arco 组件        | 说明                                                     |
+| ----------------- | ---------------- | -------------------------------------------------------- |
+| `"input"`         | `a-input`        | `placeholder` 等直接透传                                  |
+| `"inputNumber"`   | `a-input-number` | 数值范围走 schema 的 `minimum`/`maximum`                  |
+| `"select"`        | `a-select`       | `enumList`: `[{label, value}]`，保存时按枚举值做 ajv 校验 |
+
+> `dynamicSelect`/`dateRange` 尚未在表单侧注册（`dashboard-model.md` 中的相关描述为规划项）；`componentType` 未注册时该项不渲染。
+
+通用 option 字段：
+
+- `required`：一般不手写——由 `schema.required` 数组自动注入（见 6.2），控制红星与「不能为空」校验。
+- `visible`：`false` 时隐藏表单项（`v-show`）。
+- `disabled` / `default` / `placeholder`：透传给 arco 组件。
+
+**校验**：schema-form 注入 ajv 实例，每个表单项在 blur/保存时按字段级 JSON-Schema（`type`/`minLength`/`maxLength`/`pattern`/`minimum`/`maximum`/`enum`）校验，错误文案显示在项下方；任一项失败则整个表单不提交。
+
+**数据流**：`showComponent` → `com.show(rowData)` → createForm 直接打开（保存 `POST <api>`）；editForm/detailPanel 先 `GET <api>?<mainKey>=<值>` 回显；保存成功后 emit `command: loadTableData` 刷新表格。
 
 ---
 
@@ -544,7 +698,7 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 ## 8. 前端消费链路
 
-理解前端如何消费 DSL，有助于写出正确的配置：
+理解前端如何消费 DSL，有助于写出正确的配置。项目列表页 `/view/project-list` 及其 project API 由 `sunset-demo` 宿主应用提供；`/view/dashboard` 是 Sunset 的项目工作台页面，下述链路由宿主应用的 project 模块支持：
 
 ```
 1. 浏览器访问 /view/dashboard/schema?projectKey=pdd&key=product
@@ -563,8 +717,12 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
    └── schema  → /view/dashboard/schema → schema-view.vue
 7. schema-view 内部：
    useSchema() 根据路由 query 的 key/siderKey 从 menuStore 找到菜单项
-   → buildDtoSchema 拆出 tableSchema / searchSchema（见 6.2）
+   → buildDtoSchema 拆出 tableSchema / searchSchema / components（见 6.2）
    → 搜索栏 + 表格渲染，URL query 同名字段预填搜索默认值
+8. 动态组件（配置了 tableConfig.componentConfig 时）：
+   schema-view 渲染 createForm/editForm/detailPanel 抽屉
+   → 按钮 eventKey=showComponent + eventOption.comName 打开对应抽屉（见 6.5）
+   → 保存成功 emit command: loadTableData → 刷新表格
 ```
 
 ### 前端路由表（`entry.dashboard.js`，基址 `/view/dashboard`）
@@ -604,17 +762,18 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 失败时 `success: false`，附带 `code` 与 `message`。前端按 code 提示：
 
-| code  | 含义                                   | 来源                     |
-| ----- | -------------------------------------- | ------------------------ |
-| `442` | 参数校验失败（router-schema ajv 校验） | `api-params-verify` 中间件 |
-| `445` | 非法请求                               | 同上                     |
-| `446` | 缺少必填参数 / 缺少 `project_key` header | 同上 + `project-handler` 中间件 |
-| `50000` | 业务错误（message 为具体文案）       | controller 调 `this.fail` |
-| `504` | 请求超时（>60s）                       | curl.js                  |
+| code     | 含义                                                     | 来源                       |
+| -------- | -------------------------------------------------------- | -------------------------- |
+| `442`    | 参数校验失败（router-schema ajv 校验）                   | `api-params-verify` 中间件 |
+| `445`    | 非法请求：签名校验失败，或 `s_t` 时间戳距当前超过 10 分钟 | `api-sign-verify` 中间件   |
+| `446`    | 缺少 `project_key` header                                | `project-handler` 中间件   |
+| `5000`   | 服务端未捕获异常（统一 Internal Server Error）           | `error-handler` 中间件     |
+| `50000`  | 业务错误（message 为具体文案）                           | controller 调 `this.fail`  |
+| `504`    | 请求超时（>60s）                                         | curl.js                    |
 
 ### 9.2 请求头
 
-- `s_t` + `s_sign`：curl.js 自动附带时间戳与签名（`md5("sunset_" + s_t)`）。
+- `s_t` + `s_sign`：curl.js 自动附带时间戳与签名（`md5("sunset_" + s_t)`），服务端校验签名并要求 `s_t` 距当前不超过 10 分钟，否则返回 `445`。
 - `project_key`：URL 以 `/api/project/` 开头时自动携带，取自 `window.__SUNSET__.projectKey`（服务端在 `entry.tpl` 注入）。**归属项目的接口必须带此头**（`project-handler` 中间件强制），例外名单：`/api/project/model_list`、`/api/project/list`。
 
 ### 9.3 页面路由基址
@@ -625,7 +784,7 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 1. 在 `app/service/business.js`（或新建 service）实现数据逻辑。
 2. 在 `app/controller/business.js` 实现处理器，遵循 `this.success(ctx, data, { total })` / `this.fail(ctx, message, code)`。
-3. 在 `app/router/business.js` 注册路由，注意与 6.6 的调用契约对齐（`GET <api>/list`、`DELETE <api>`）。
+3. 在 `app/router/business.js` 注册路由，注意与 6.6 的调用契约对齐（`GET <api>/list`、`GET/POST/PUT/DELETE <api>`、枚举选项接口）。
 4. 在 `app/router-schema/business.js` 登记参数校验 schema——**登记的 key 必须与路由 path 完全一致**，否则校验静默不生效（无 schema 的 path 会直接放行）。
 
 ---
@@ -690,7 +849,7 @@ module.exports = {
 
 ### 步骤三：无需注册，自动加载
 
-`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。重启服务后通过以下 API 访问：
+`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。在包含 project 模块的宿主应用（如 `sunset-demo`）中，重启服务后可通过以下 API 访问：
 
 | API                                    | 说明                                                                                   |
 | -------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -704,7 +863,7 @@ module.exports = {
 
 ## 11. 完整 DSL 模板参考
 
-以下是一个包含所有菜单类型的项目级模板：
+以下是一个包含所有菜单类型的项目级模板（动态表单/详情的完整字段配置见第 2 节实际 model.js 示例与 6.8 节）：
 
 ```js
 module.exports = {
@@ -864,4 +1023,9 @@ module.exports = {
 | 12  | **schema 字段不配 `tableOption`/`searchOption` 就不显示**          | 表格列与搜索栏互相独立，由各自 Option 的存在与否决定；`visible: false` 只是隐藏列          |
 | 13  | **`api` 是基址，不是列表地址**                                     | 前端自动请求 `GET <api>/list`，删除走 `DELETE <api>`，后端实现时对齐 6.6 契约              |
 | 14  | **router-schema 的 path 必须与路由 path 一致**                     | 不一致时该接口的参数校验会静默跳过（不报错），如曾经的 `/api/product` vs `/api/project/product` |
-| 15  | **`dateRange` 搜索值是数组**                                       | 建议配置 `valueFormat` 让选中值为字符串（否则是 Date 对象），后端解析 query 时按数组处理   |
+| 15  | **`dateRange` 搜索值拆为 `_start`/`_end`**                         | 选中后以 `<field>_start`、`<field>_end` 两个参数下发，值固定 `YYYY-MM-DD HH:mm:ss`；未选值时不下发；组件忽略 `default`，URL 预填对它无效             |
+| 16  | **sider 子项 custom 的 `path` 必须以 `/` 开头**                    | 否则会拼出 `/sidertaobao/...` 之类的非法路由，点击无法跳转（当前 `taobao.js` 的 `taobao/cpopon` 即踩此坑）                                          |
+| 17  | **`componentConfig` 必须放在 `tableConfig` 下**                    | hook/schema.js 读取的是 `schemaConfig.tableConfig.componentConfig`，写在 `schemaConfig` 顶层不生效                                                  |
+| 18  | **`showComponent` 用 `eventOption.comName`**                       | 字段名是 `comName`（不是 `componentName`），取值 `createForm`/`editForm`/`detailPanel`                                                              |
+| 19  | **表单 `componentType` 当前仅支持 `input`/`inputNumber`/`select`** | `dynamicSelect`/`dateRange` 未在表单侧注册；`select` 未配 `default` 时会回退选中第一个枚举值，建议显式 `default: ""`                                 |
+| 20  | **必填校验用 `schema.required` 数组**                              | 自动注入到对应 `xxxOption.required`（红星 + 校验），不要在每个 option 里手写                                                                        |

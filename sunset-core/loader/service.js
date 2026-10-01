@@ -17,32 +17,41 @@ const { camelCase } = require("./utils");
  *  => app.services.customModule.customService
  */
 module.exports = (app) => {
-  const serviceDir = path.join(app.businessPath, "service");
-
   app.services = {};
 
-  const files = glob.sync("**/*.js", { cwd: serviceDir });
+  const sunsetDir = path.resolve(__dirname, "..", "..");
+  const sunsetServiceDir = path.join(sunsetDir, "app", "service");
+  const businessServiceDir = path.join(app.businessPath, "service");
 
-  files.forEach((file) => {
-    // glob v7 always returns `/`-separated results regardless of platform,
-    // normalize to path.sep before splitting
-    const normalizedFile = file.split("/").join(path.sep);
-    const parts = normalizedFile.split(path.sep);
-    const fileName = parts.pop();
-    const moduleName = camelCase(fileName.replace(/\.js$/, ""));
+  loadServices(sunsetServiceDir);
+  if (path.resolve(sunsetServiceDir) !== path.resolve(businessServiceDir)) {
+    loadServices(businessServiceDir);
+  }
 
-    // build nested dir object, eg: custom-module => app.services.customModule
-    const target = parts.reduce(
-      (obj, dirName) =>
-        (obj[camelCase(dirName)] = obj[camelCase(dirName)] || {}),
-      app.services,
-    );
+  function loadServices(serviceDir) {
+    const files = glob.sync("**/*.js", { cwd: serviceDir });
 
-    const service = require(path.join(serviceDir, normalizedFile))(app);
-    // support factory pattern: module.exports = (app) => ({...})
-    if (typeof service !== "function") {
-      throw new Error(`Service ${moduleName} is not a class`);
-    }
-    target[moduleName] = new service(app);
-  });
+    files.forEach((file) => {
+      // glob v7 always returns `/`-separated results regardless of platform,
+      // normalize to path.sep before splitting
+      const normalizedFile = file.split("/").join(path.sep);
+      const parts = normalizedFile.split(path.sep);
+      const fileName = parts.pop();
+      const moduleName = camelCase(fileName.replace(/\.js$/, ""));
+
+      // build nested dir object, eg: custom-module => app.services.customModule
+      const target = parts.reduce(
+        (obj, dirName) =>
+          (obj[camelCase(dirName)] = obj[camelCase(dirName)] || {}),
+        app.services,
+      );
+
+      const service = require(path.join(serviceDir, normalizedFile))(app);
+      // support factory pattern: module.exports = (app) => ({...})
+      if (typeof service !== "function") {
+        throw new Error(`Service ${moduleName} is not a class`);
+      }
+      target[moduleName] = new service(app);
+    });
+  }
 };

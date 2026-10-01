@@ -1,5 +1,6 @@
 const Koa = require("koa");
 const path = require("path");
+const fs = require("fs");
 
 const env = require("./env");
 const middlewareLoader = require("./loader/middleware");
@@ -21,7 +22,7 @@ module.exports = {
    * homePath:"Project homepage"
    * }
    */
-  async start(options = {}) {
+  start(options = {}) {
     const app = new Koa();
 
     app.options = options;
@@ -57,12 +58,33 @@ module.exports = {
     console.log(`[start] load extend done`);
     console.log(app.customExtend);
 
-    // global middleware
+    // global middleware: skip business one when identical to sunset's, else app.use registers twice
+    const sunsetMiddlewarePath = path.resolve(
+      __dirname,
+      `..${sep}app${sep}middleware.js`,
+    );
+    const businessMiddlewarePath = `${app.businessPath}${sep}middleware.js`;
+
     try {
-      const middlewarePath = app.businessPath + `${sep}middleware.js`;
-      const fs = require("fs");
-      if (fs.existsSync(middlewarePath)) {
-        require(middlewarePath)(app);
+      if (fs.existsSync(sunsetMiddlewarePath)) {
+        require(sunsetMiddlewarePath)(app);
+        console.log(`[start] load sunset global middleware done`);
+      } else {
+        console.warn(`[start] no sunset global middleware.js, skip`);
+      }
+    } catch (error) {
+      console.error("Failed to load sunset global middleware:", error);
+    }
+
+    try {
+      if (!fs.existsSync(businessMiddlewarePath)) {
+        console.warn(`[start] no global middleware.js, skip`);
+      } else if (businessMiddlewarePath === sunsetMiddlewarePath) {
+        console.log(
+          `[start] global middleware.js is sunset built-in, skip duplicate`,
+        );
+      } else {
+        require(businessMiddlewarePath)(app);
         console.log(`[start] load global middleware done`);
       }
     } catch (error) {

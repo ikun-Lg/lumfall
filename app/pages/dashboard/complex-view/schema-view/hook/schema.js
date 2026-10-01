@@ -1,4 +1,4 @@
-import { useMenuStore } from "$store/menu.js";
+import { useMenuStore } from "$sunsetStore/menu.js";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 

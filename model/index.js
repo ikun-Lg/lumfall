@@ -36,7 +36,7 @@ const projectExtendModel = (model, project) => {
 module.exports = (app) => {
   const modelList = [];
 
-  const modelPath = path.resolve(app.baseDir, `.${sep}model`);
+  const modelPath = path.resolve(process.cwd(), `.${sep}model`);
   const fileList = glob.sync(path.resolve(modelPath, `.${sep}**${sep}**.js`));
   fileList.forEach((file) => {
     if (file.indexOf("index.js") > -1) return;

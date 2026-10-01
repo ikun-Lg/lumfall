@@ -8,7 +8,7 @@
 </template>
 <script setup>
 import { onMounted, ref } from "vue";
-import $curl from "$common/curl.js";
+import $curl from "$sunsetCurl";
 
 const { schemaKey, schema } = defineProps({
   schemaKey: String,

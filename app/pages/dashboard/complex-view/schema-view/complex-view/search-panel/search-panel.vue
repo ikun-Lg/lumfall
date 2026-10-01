@@ -11,7 +11,7 @@
 
 <script setup>
 import { inject } from "vue";
-import SchemaSearchBar from "$widgets/schema-search-bar/schema-search-bar.vue";
+import SchemaSearchBar from "$sunsetSchemaSearchBar";
 
 const { searchSchema } = inject("schemaViewData");
 

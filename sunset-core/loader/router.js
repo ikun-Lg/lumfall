@@ -17,11 +17,21 @@ const KoaRouter = require("koa-router");
  *   app.router = KoaRouter instance, routes registered via app.use
  */
 module.exports = (app) => {
-  const routerDir = path.join(app.businessPath, "router");
-
   const router = new KoaRouter();
+  const sunsetDir = path.resolve(__dirname, "..", "..");
+  const sunsetRouterDir = path.join(sunsetDir, "app", "router");
+  const businessRouterDir = path.join(app.businessPath, "router");
 
-  if (fs.existsSync(routerDir)) {
+  loadRoutes(businessRouterDir);
+  if (path.resolve(sunsetRouterDir) !== path.resolve(businessRouterDir)) {
+    loadRoutes(sunsetRouterDir);
+  }
+
+  function loadRoutes(routerDir) {
+    if (!fs.existsSync(routerDir)) {
+      return;
+    }
+
     const files = glob.sync("**/*.js", { cwd: routerDir });
 
     files.forEach((file) => {

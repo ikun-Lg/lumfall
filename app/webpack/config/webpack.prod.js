@@ -36,7 +36,7 @@ const webpackConfig = merge.smart(baseConfig, {
       {
         // 普通 .css：抽出为独立文件。base 里 .css 原用 style-loader 注入 <style>，这里被覆盖为抽取式
         test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader, "css-loader"],
+        use: [MiniCssExtractPlugin.loader, require.resolve("css-loader")],
       },
       {
         // 匹配 .less 文件
@@ -48,7 +48,7 @@ const webpackConfig = merge.smart(baseConfig, {
           MiniCssExtractPlugin.loader,
           // 2) thread-loader：把“右侧”的 css-loader + less-loader 放进 worker 池并行编译
           {
-            loader: "thread-loader",
+            loader: require.resolve("thread-loader"),
             options: {
               // worker 数量 = CPU 逻辑核数，尽量吃满多核
               workers: os.cpus().length,
@@ -56,32 +56,38 @@ const webpackConfig = merge.smart(baseConfig, {
           },
           // 3) css-loader：解析 @import / url() 依赖；importLoaders:1 表示
           //    @import 进来的资源还要再经过 1 个前置 loader（即 less-loader）处理
-          { loader: "css-loader", options: { importLoaders: 1 } },
+          {
+            loader: require.resolve("css-loader"),
+            options: { importLoaders: 1 },
+          },
           // 4) less-loader：把 less 编译成 css
-          "less-loader",
+          require.resolve("less-loader"),
         ],
       },
       {
         // 匹配 .js 文件
         test: /\.js$/,
         // 仅编译业务页面目录，排除 node_modules（第三方走 vendor，由 splitChunks 处理）
-        include: [path.resolve(process.cwd(), "./app/pages")],
+        include: [
+          path.resolve(__dirname, "../../pages"),
+          path.resolve(process.cwd(), "app/pages"),
+        ],
         use: [
           // thread-loader：HappyPack 的 webpack5 替代品，用 worker 池并行执行 babel
           {
-            loader: "thread-loader",
+            loader: require.resolve("thread-loader"),
             options: {
               // worker 数量 = CPU 逻辑核数
               workers: os.cpus().length,
             },
           },
           {
-            loader: "babel-loader",
+            loader: require.resolve("babel-loader"),
             options: {
               // 预设：按目标浏览器做语法降级（如编译到 ES5）
-              presets: ["@babel/preset-env"],
+              presets: [require.resolve("@babel/preset-env")],
               // 插件：复用 @babel/runtime 里的 helper，避免每个文件重复注入、减小体积
-              plugins: ["@babel/plugin-transform-runtime"],
+              plugins: [require.resolve("@babel/plugin-transform-runtime")],
             },
           },
         ],
@@ -109,6 +115,8 @@ const webpackConfig = merge.smart(baseConfig, {
     // chunkFilename 用于非入口 chunk（如被 splitChunks 拆出的公共 css）的命名
     new MiniCssExtractPlugin({
       chunkFilename: "css/[name]_[contenthash:8].bundle.css",
+      // Vue widget styles are scoped, so cross-entrypoint order does not affect the cascade.
+      ignoreOrder: true,
     }),
     // 生产环境压缩 CSS（webpack5 下比内置压缩更可控），需配合上面的 MiniCssExtractPlugin
     new CSSMinimizerPlugin(),
