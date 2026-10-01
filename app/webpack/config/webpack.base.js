@@ -138,6 +138,12 @@ module.exports = merge.smart(
         );
 
         return {
+          "@babel/runtime/helpers/asyncToGenerator":
+            require.resolve("@babel/runtime/helpers/asyncToGenerator"),
+          "@babel/runtime/helpers/toConsumableArray":
+            require.resolve("@babel/runtime/helpers/toConsumableArray"),
+          "@babel/runtime/regenerator":
+            require.resolve("@babel/runtime/regenerator"),
           vue: require.resolve("vue"),
           $lumfallPage: path.resolve(__dirname, "../../pages"),
           $lumfallBoot: path.resolve(__dirname, "../../pages/boot.js"),
