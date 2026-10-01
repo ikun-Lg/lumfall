@@ -239,17 +239,27 @@ describe("monitoring integration", function () {
     assert.strictEqual(events[1][1].status, 200);
   });
 
-  it("observes a downstream template error without changing the response", async () => {
+  it("observes a downstream error without changing the response", async () => {
     const errors = [];
+    const boom = new Error("downstream boom");
+    const original = app.services.project.getModelList;
+
     app.options.monitoring.onRequestError = (payload) => errors.push(payload);
+    app.services.project.getModelList = () => {
+      throw boom;
+    };
 
-    const response = await supertest(app.callback()).get(
-      "/view/definitely-missing-page",
-    );
+    try {
+      const response = await supertest(app.callback()).get(
+        "/api/project/model_list",
+      );
 
-    assert.strictEqual(response.status, 302);
-    assert.strictEqual(errors.length, 1);
-    assert.match(errors[0].error.message, /template not found/);
-    assert.strictEqual(errors[0].path, "/view/definitely-missing-page");
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0].error, boom);
+      assert.strictEqual(errors[0].path, "/api/project/model_list");
+      assert.strictEqual(response.body.code, 5000);
+    } finally {
+      app.services.project.getModelList = original;
+    }
   });
 });
