@@ -88,6 +88,24 @@ Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责
 
 配置按以下顺序浅合并，后面的配置覆盖前面的同名键：框架 `config.default.js`、业务 `config.default.js`、框架环境配置、业务环境配置。配置模块可导出对象，也可导出接收 `app` 并返回对象的函数。
 
+可在 `serviceStart(options)` 中提供 JSON Schema 校验最终合并后的配置；不提供时保持现有自由扩展行为：
+
+```js
+serviceStart({
+	homePath: "/view/health",
+	name: "my-app",
+	configSchema: {
+		type: "object",
+		required: ["port"],
+		properties: {
+			port: { type: "integer", minimum: 1, maximum: 65535 },
+		},
+	},
+});
+```
+
+配置文件仍须导出普通对象。schema 不匹配时启动会失败，并指出环境、字段路径和约束原因。
+
 ## Dashboard Model 配置
 
 Dashboard 使用 Model + Project 两层 CommonJS 配置：Model 声明可复用的菜单骨架，Project 声明具体项目的信息和菜单差异。框架启动时扫描业务项目根目录下的 `model/`，将每个 Project 与所属 Model 合并；因此这些配置不放在 `app/` 中。
