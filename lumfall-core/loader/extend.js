@@ -46,12 +46,10 @@ module.exports = (app) => {
       }
 
       const mod = require(path.join(extendDir, normalizedFile));
-      // support factory pattern: module.exports = (app) => ({...})
       if (typeof mod !== "function") {
-        console.warn(
-          `[extend] skip ${extendName}: module.exports is not a function`,
+        throw new Error(
+          `[extend] ${path.join(extendDir, normalizedFile)} must export a factory function`,
         );
-        return;
       }
       app[extendName] = mod(app);
     });

@@ -47,9 +47,20 @@ module.exports = (app) => {
       app.middlewares,
     );
 
-    const middleware = require(path.join(middlewareDir, normalizedFile));
-    // support factory pattern: module.exports = (app) => (ctx, next) => {}
-    target[moduleName] =
-      typeof middleware === "function" ? middleware(app) : middleware;
+    const middlewarePath = path.join(middlewareDir, normalizedFile);
+    const middlewareFactory = require(middlewarePath);
+    if (typeof middlewareFactory !== "function") {
+      throw new Error(
+        `[middleware] ${middlewarePath} must export a factory function`,
+      );
+    }
+
+    const middleware = middlewareFactory(app);
+    if (typeof middleware !== "function") {
+      throw new Error(
+        `[middleware] ${middlewarePath} factory must return a middleware function`,
+      );
+    }
+    target[moduleName] = middleware;
   }
 };

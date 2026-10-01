@@ -36,14 +36,32 @@ module.exports = (app) => {
     // glob v7 always returns `/`-separated results regardless of platform,
     // normalize to path.sep before joining
     const normalizedFile = file.split("/").join(path.sep);
-    const schemaModule = require(path.join(schemaDir, normalizedFile));
+    const schemaPath = path.join(schemaDir, normalizedFile);
+    const schemaModule = require(schemaPath);
+    if (typeof schemaModule !== "function" && !isSchemaMap(schemaModule)) {
+      throw new Error(
+        `[router-schema] ${schemaPath} must export a schema map or factory function`,
+      );
+    }
+
     const schemaMap =
       typeof schemaModule === "function" ? schemaModule(app) : schemaModule;
 
-    if (!schemaMap || typeof schemaMap !== "object") {
-      return;
+    if (!isSchemaMap(schemaMap)) {
+      throw new Error(
+        `[router-schema] ${schemaPath} factory must return a schema map`,
+      );
     }
 
     Object.assign(app.routerSchema, schemaMap);
+  }
+
+  function isSchemaMap(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return false;
+    }
+
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
   }
 };
