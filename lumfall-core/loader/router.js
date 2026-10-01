@@ -52,6 +52,7 @@ module.exports = (app) => {
     ctx.redirect(app?.options?.homePath || "/");
   });
 
+  app.router = router;
   app.use(router.routes());
   app.use(router.allowedMethods());
 };

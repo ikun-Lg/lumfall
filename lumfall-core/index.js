@@ -10,6 +10,7 @@ const controllerLoader = require("./loader/controller");
 const serviceLoader = require("./loader/service");
 const configLoader = require("./loader/config");
 const extendLoader = require("./loader/extend");
+const createDiagnostics = require("./diagnostics");
 
 const { sep } = path;
 const lifecycleHookNames = new Set([
@@ -123,9 +124,10 @@ module.exports = {
       }
 
       callStartupHook("beforeRouteLoad", app);
-    routerLoader(app);
-    console.log(`[start] load router done`);
+      routerLoader(app);
+      console.log(`[start] load router done`);
       callStartupHook("afterRouteLoad", app);
+      app.diagnostics = createDiagnostics(app);
 
       const port = process.env.PORT || 3000;
       const host = process.env.IP || "0.0.0.0";

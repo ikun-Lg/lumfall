@@ -4,6 +4,11 @@ module.exports = () => {
   const checks = new Map();
 
   return {
+    list() {
+      return Array.from(checks, ([name, { timeoutMs }]) => ({ name, timeoutMs }))
+        .sort((left, right) => left.name.localeCompare(right.name));
+    },
+
     register(name, probe, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
       if (typeof name !== "string" || !name.trim()) {
         throw new TypeError("Health check name must be a non-empty string");

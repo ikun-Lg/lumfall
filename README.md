@@ -172,6 +172,9 @@ module.exports = {
 ```
 
 签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
+## Diagnostics manifest
+
+启动后可通过 `app.diagnostics.getManifest()` 获取 JSON 可序列化的运行时清单，包含 Lumfall 版本/环境、加载器名称、注册路由及方法、发现的页面入口、health check 名称和超时。业务页面与框架页面重名时，清单与构建行为一致，由业务页面覆盖。清单不会复制配置对象、凭证、探针函数或异常详情。
 
 ## Dashboard Model 配置
 
