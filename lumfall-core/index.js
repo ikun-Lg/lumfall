@@ -10,6 +10,7 @@ const controllerLoader = require("./loader/controller");
 const serviceLoader = require("./loader/service");
 const configLoader = require("./loader/config");
 const extendLoader = require("./loader/extend");
+const createDiagnostics = require("./diagnostics");
 
 const { sep } = path;
 
@@ -93,6 +94,7 @@ module.exports = {
 
     routerLoader(app);
     console.log(`[start] load router done`);
+    app.diagnostics = createDiagnostics(app);
 
     try {
       const port = process.env.PORT || 3000;

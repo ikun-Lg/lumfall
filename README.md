@@ -88,6 +88,10 @@ Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责
 
 配置按以下顺序浅合并，后面的配置覆盖前面的同名键：框架 `config.default.js`、业务 `config.default.js`、框架环境配置、业务环境配置。配置模块可导出对象，也可导出接收 `app` 并返回对象的函数。
 
+## Diagnostics manifest
+
+启动后可通过 `app.diagnostics.getManifest()` 获取 JSON 可序列化的运行时清单，包含 Lumfall 版本/环境、加载器名称、注册路由及方法、发现的页面入口、health check 名称和超时。业务页面与框架页面重名时，清单与构建行为一致，由业务页面覆盖。清单不会复制配置对象、凭证、探针函数或异常详情。
+
 ## Dashboard Model 配置
 
 Dashboard 使用 Model + Project 两层 CommonJS 配置：Model 声明可复用的菜单骨架，Project 声明具体项目的信息和菜单差异。框架启动时扫描业务项目根目录下的 `model/`，将每个 Project 与所属 Model 合并；因此这些配置不放在 `app/` 中。
