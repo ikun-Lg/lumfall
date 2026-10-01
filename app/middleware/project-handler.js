@@ -12,17 +12,27 @@ const normalizePath = (path = "") => path.replace(/\/+$/, "") || "/";
 
 module.exports = (app) => {
   return async (ctx, next) => {
+    const policy = app.config?.security?.projectKey || {};
+    if (policy.enabled === false) {
+      return await next();
+    }
+
     if (ctx.path.indexOf("/api/project/") < 0) {
       return await next();
     }
 
-    if (PROJECT_KEY_FREE_PATHS.has(normalizePath(ctx.path))) {
+    const freePaths = new Set([
+      ...PROJECT_KEY_FREE_PATHS,
+      ...(Array.isArray(policy.freePaths) ? policy.freePaths : []),
+    ]);
+    if (freePaths.has(normalizePath(ctx.path))) {
       return await next();
     }
 
-    const { project_key } = ctx.request.headers;
+    const headerName = (policy.headerName || "project_key").toLowerCase();
+    const projectKey = ctx.request.headers[headerName];
 
-    if (!project_key) {
+    if (!projectKey) {
       ctx.status = 200;
       ctx.body = {
         success: false,
@@ -32,7 +42,7 @@ module.exports = (app) => {
       return;
     }
 
-    ctx.projectKey = project_key;
+    ctx.projectKey = projectKey;
 
     await next();
   };

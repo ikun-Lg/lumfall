@@ -86,7 +86,53 @@ your-app/
 
 Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责把 URL 映射到控制器方法。全局中间件按需使用 `app.middlewares` 中已加载的中间件。
 
+## Security policy
+
+`config.security` 集中控制 API 签名和 project key 策略。默认签名验证关闭以兼容现有客户端，`/api/project/**` 的 project key 校验默认开启；`/api/project/model_list` 与 `/api/project/list` 默认不要求 project key。
+
+```js
+module.exports = {
+	security: {
+		apiSignature: {
+			enabled: false,
+			secret: process.env.API_SIGN_SECRET,
+			maxAgeMs: 600000,
+		},
+		projectKey: {
+			enabled: true,
+			headerName: "project_key",
+			freePaths: ["/api/project/public-list"],
+		},
+	},
+};
+```
+
+签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
+
 配置按以下顺序浅合并，后面的配置覆盖前面的同名键：框架 `config.default.js`、业务 `config.default.js`、框架环境配置、业务环境配置。配置模块可导出对象，也可导出接收 `app` 并返回对象的函数。
+
+## Security policy
+
+`config.security` 集中控制 API 签名和 project key 策略。默认签名验证关闭以兼容现有客户端，`/api/project/**` 的 project key 校验默认开启；`/api/project/model_list` 与 `/api/project/list` 默认不要求 project key。
+
+```js
+module.exports = {
+	security: {
+		apiSignature: {
+			enabled: false,
+			secret: process.env.API_SIGN_SECRET,
+			maxAgeMs: 600000,
+		},
+		projectKey: {
+			enabled: true,
+			headerName: "project_key",
+			freePaths: ["/api/project/public-list"],
+		},
+	},
+};
+```
+
+签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
 
 ## Dashboard Model 配置
 
