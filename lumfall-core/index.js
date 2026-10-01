@@ -11,6 +11,7 @@ const serviceLoader = require("./loader/service");
 const configLoader = require("./loader/config");
 const extendLoader = require("./loader/extend");
 const createDiagnostics = require("./diagnostics");
+const registerPlugins = require("./plugins");
 
 const { sep } = path;
 const lifecycleHookNames = new Set([
@@ -98,6 +99,8 @@ module.exports = {
       extendLoader(app);
       console.log(`[start] load extend done`);
       console.log(app.customExtend);
+
+      registerPlugins(app, options.plugins);
 
       const lumfallMiddlewarePath = path.resolve(
         __dirname,

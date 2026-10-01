@@ -179,6 +179,31 @@ module.exports = {
 ## Diagnostics manifest
 
 启动后可通过 `app.diagnostics.getManifest()` 获取 JSON 可序列化的运行时清单，包含 Lumfall 版本/环境、加载器名称、注册路由及方法、发现的页面入口、health check 名称和超时。业务页面与框架页面重名时，清单与构建行为一致，由业务页面覆盖。清单不会复制配置对象、凭证、探针函数或异常详情。
+## Plugins
+
+`serviceStart({ plugins })` 可选接收插件描述符数组。插件按声明顺序稳定排序；每个插件的 `dependencies` 会先于它注册。`register(app)` 在内置/业务 loader、config 和 extend 完成后、全局 middleware 与 router 注册前同步执行；返回的普通对象会挂载到 `app.plugins[name]`。省略 `plugins` 时保持原有启动路径。
+
+```js
+serviceStart({
+	plugins: [
+		{
+			name: "database",
+			register(app) {
+				return { connect: () => app.services.database.connect() };
+			},
+		},
+		{
+			name: "feature-module",
+			dependencies: ["database"],
+			register(app) {
+				return { database: app.plugins.database };
+			},
+		},
+	],
+});
+```
+
+插件必须有唯一非空 `name` 和同步 `register(app)` 函数。依赖缺失、循环、重复名称、异步注册或非法返回值都会使启动失败，并给出插件级诊断。
 
 ## Dashboard Model 配置
 
