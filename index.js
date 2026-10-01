@@ -12,7 +12,7 @@ module.exports = {
     }
   },
 
-  serviceStart(options = {}) {
+  serviceStart(options = { homePath: "/view/health", name: "sunset" }) {
     const app = SunsetCore.start(options);
     return app;
   },

@@ -2,9 +2,9 @@ import { createApp } from "vue";
 import ArcoVue from "@arco-design/web-vue";
 import "@arco-design/web-vue/dist/arco.css";
 import ArcoVueIcon from "@arco-design/web-vue/es/icon";
-import pinia from "$store";
+import pinia from "$sunsetStore";
 import { createRouter, createWebHistory } from "vue-router";
-import "$assert/custom.css";
+import "$sunsetAssert/custom.css";
 
 export default (pageComponent, { routes = [], libs = [] } = {}) => {
   const app = createApp(pageComponent);

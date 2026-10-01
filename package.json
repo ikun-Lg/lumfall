@@ -14,6 +14,7 @@
     "prod:win": "set _ENV='prod' && nodemon index.js",
     "build:dev": "node --max_old_space_size=4096 ./app/webpack/dev.js",
     "build:prod": "node ./app/webpack/prod.js",
+    "start:prod": "pnpm build:prod && _ENV='prod' node -e \"require('./index').serviceStart({ name: 'Sunset', homePath: '/view/health' })\"",
     "dev:watch": "concurrently -n webpack,server -c cyan,green \"pnpm build:dev\" \"pnpm dev\"",
     "new-page": "node scripts/generate-page.js"
   },

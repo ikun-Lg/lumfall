@@ -25,9 +25,9 @@
 
 <script lang="js" setup>
 import { ref, defineExpose, inject } from "vue";
-import $curl from "$common/curl.js";
+import $curl from "$sunsetCurl";
 import { Notification } from "@arco-design/web-vue";
-import SchemaForm from "$widgets/schema-form/schema-form.vue";
+import SchemaForm from "$sunsetSchemaForm";
 
 const { api, components } = inject("schemaViewData") || {};
 

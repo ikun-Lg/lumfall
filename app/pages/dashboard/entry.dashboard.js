@@ -1,4 +1,4 @@
-import boot from "$page/boot.js";
+import boot from "$sunsetBoot";
 import Dashboard from "./dashboard.vue";
 
 const routes = [];

@@ -44,7 +44,7 @@ function buildVueTemplate(pageName, withHeader) {
 </template>
 
 <script setup>
-import HeaderContainer from "$widgets/header-container/header-container.vue";
+import HeaderContainer from "$sunsetHeaderContainer";
 </script>
 
 <style lang="less" scoped>
@@ -109,7 +109,7 @@ function main() {
   fs.mkdirSync(pageDir, { recursive: true });
 
   // 生成 entry.<page-name>.js
-  const entryContent = `import boot from "$page/boot.js";
+  const entryContent = `import boot from "$sunsetBoot";
 import ${toPascalCase(pageName)} from "./${pageName}.vue";
 
 boot(${toPascalCase(pageName)});

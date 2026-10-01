@@ -68,7 +68,10 @@ const webpackConfig = merge.smart(baseConfig, {
         // 匹配 .js 文件
         test: /\.js$/,
         // 仅编译业务页面目录，排除 node_modules（第三方走 vendor，由 splitChunks 处理）
-        include: [path.resolve(__dirname, "../../pages")],
+        include: [
+          path.resolve(__dirname, "../../pages"),
+          path.resolve(process.cwd(), "app/pages"),
+        ],
         use: [
           // thread-loader：HappyPack 的 webpack5 替代品，用 worker 池并行执行 babel
           {
@@ -112,6 +115,8 @@ const webpackConfig = merge.smart(baseConfig, {
     // chunkFilename 用于非入口 chunk（如被 splitChunks 拆出的公共 css）的命名
     new MiniCssExtractPlugin({
       chunkFilename: "css/[name]_[contenthash:8].bundle.css",
+      // Vue widget styles are scoped, so cross-entrypoint order does not affect the cascade.
+      ignoreOrder: true,
     }),
     // 生产环境压缩 CSS（webpack5 下比内置压缩更可控），需配合上面的 MiniCssExtractPlugin
     new CSSMinimizerPlugin(),

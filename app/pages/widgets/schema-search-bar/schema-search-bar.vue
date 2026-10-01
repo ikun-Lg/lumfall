@@ -3,6 +3,7 @@
     v-if="schema && schema.properties"
     class="schema-search-bar"
     layout="inline"
+    :model="formModel"
   >
     <a-form-item
       v-for="(schemaItem, key) in schema.properties"
@@ -11,7 +12,7 @@
       class="schema-search-bar-item"
     >
       <component
-        :ref="searchComList"
+        :ref="(component) => setSearchComponent(component, key)"
         :is="SearchItemConfig[schemaItem.option?.componentType].component"
         :schemaKey="key"
         :schema="schemaItem"
@@ -54,14 +55,23 @@ const props = defineProps({
 });
 
 const { schema } = toRefs(props);
+const formModel = ref({});
 
 const emit = defineEmits(["load", "search", "reset"]);
 
-const searchComList = ref([]);
+const searchComList = new Map();
+
+const setSearchComponent = (component, key) => {
+  if (component) {
+    searchComList.set(key, component);
+  } else {
+    searchComList.delete(key);
+  }
+};
 
 const getValue = () => {
   let dtoObj = {};
-  searchComList.value.forEach((com) => {
+  searchComList.forEach((com) => {
     dtoObj = { ...dtoObj, ...com?.getValue() };
   });
   return dtoObj;
@@ -80,7 +90,7 @@ const search = () => {
 };
 
 const reset = () => {
-  searchComList.value.forEach((com) => {
+  searchComList.forEach((com) => {
     com?.reset();
   });
   emit("reset");
