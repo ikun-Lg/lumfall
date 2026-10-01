@@ -8,7 +8,7 @@ const pageEntries = {};
 const HtmlWebpackPluginList = [];
 
 // get app/pages all entry files(entry.xx.js)
-const entryList = path.resolve(process.cwd(), "./app/pages/**/entry.*.js");
+const entryList = path.resolve(__dirname, "../../pages/**/entry.*.js");
 glob.sync(entryList).forEach((file) => {
   const entryName = path.basename(file, ".js");
   pageEntries[entryName] = file;
@@ -19,7 +19,7 @@ glob.sync(entryList).forEach((file) => {
         "./app/public/dist/",
         `${entryName}.tpl`,
       ),
-      template: path.resolve(process.cwd(), "./app/view/entry.tpl"),
+      template: path.resolve(__dirname, "../../view/entry.tpl"),
       chunks: [entryName],
       // 模板里的 inline script 含 nunjucks 占位符 {{ name }}，交给后端渲染前不是合法 JS，
       // 因此必须关掉 inline JS 压缩，否则 production 构建会被 terser 解析报错。
@@ -46,20 +46,20 @@ module.exports = {
       {
         test: /\.vue$/,
         use: {
-          loader: "vue-loader",
+          loader: require.resolve("vue-loader"),
         },
       },
       {
         test: /\.js$/,
-        include: [path.resolve(process.cwd(), "./app/pages")],
+        include: [path.resolve(__dirname, "../../pages")],
         use: {
-          loader: "babel-loader",
+          loader: require.resolve("babel-loader"),
         },
       },
       {
         test: /\.(png|jpe?g|gif)(\?.+)?$/,
         use: {
-          loader: "url-loader",
+          loader: require.resolve("url-loader"),
           options: {
             limit: 300,
             esModule: false,
@@ -68,15 +68,19 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: [require.resolve("style-loader"), require.resolve("css-loader")],
       },
       {
         test: /\.less$/,
-        use: ["style-loader", "css-loader", "less-loader"],
+        use: [
+          require.resolve("style-loader"),
+          require.resolve("css-loader"),
+          require.resolve("less-loader"),
+        ],
       },
       {
         test: /\.(eot|svg|ttf|woff|woff2)(\?\S*)?$/,
-        use: ["file-loader"],
+        use: [require.resolve("file-loader")],
       },
     ],
   },
@@ -88,11 +92,11 @@ module.exports = {
   resolve: {
     extensions: [".js", ".vue", ".less", ".css"],
     alias: {
-      $page: path.resolve(process.cwd(), "./app/pages"),
-      $common: path.resolve(process.cwd(), "./app/pages/common"),
-      $widgets: path.resolve(process.cwd(), "./app/pages/widgets"),
-      $store: path.resolve(process.cwd(), "./app/pages/store"),
-      $assert: path.resolve(process.cwd(), "./app/pages/assert"),
+      $page: path.resolve(__dirname, "../../pages"),
+      $common: path.resolve(__dirname, "../../pages/common"),
+      $widgets: path.resolve(__dirname, "../../pages/widgets"),
+      $store: path.resolve(__dirname, "../../pages/store"),
+      $assert: path.resolve(__dirname, "../../pages/assert"),
     },
   },
 

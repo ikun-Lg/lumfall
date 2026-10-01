@@ -18,33 +18,42 @@ const { camelCase } = require("./utils");
  *  => app.customExtend
  */
 module.exports = (app) => {
-  const extendDir = path.join(app.businessPath, "extend");
+  const sunsetDir = path.resolve(__dirname, "..", "..");
+  const sunsetExtendDir = path.join(sunsetDir, "app", "extend");
+  const businessExtendDir = path.join(app.businessPath, "extend");
 
-  if (!fs.existsSync(extendDir)) {
-    return;
+  loadExtends(sunsetExtendDir);
+  if (path.resolve(sunsetExtendDir) !== path.resolve(businessExtendDir)) {
+    loadExtends(businessExtendDir);
   }
 
-  const files = glob.sync("**/*.js", { cwd: extendDir });
-
-  files.forEach((file) => {
-    // glob v7 always returns `/`-separated results regardless of platform,
-    // normalize to path.sep before splitting
-    const normalizedFile = file.split("/").join(path.sep);
-    const extendName = camelCase(path.basename(normalizedFile, ".js"));
-
-    if (extendName in app) {
-      console.warn(`[extend] skip ${extendName}: key already exists on app`);
+  function loadExtends(extendDir) {
+    if (!fs.existsSync(extendDir)) {
       return;
     }
 
-    const mod = require(path.join(extendDir, normalizedFile));
-    // support factory pattern: module.exports = (app) => ({...})
-    if (typeof mod !== "function") {
-      console.warn(
-        `[extend] skip ${extendName}: module.exports is not a function`,
-      );
-      return;
-    }
-    app[extendName] = mod(app);
-  });
+    const files = glob.sync("**/*.js", { cwd: extendDir });
+
+    files.forEach((file) => {
+      // glob v7 always returns `/`-separated results regardless of platform,
+      // normalize to path.sep before splitting
+      const normalizedFile = file.split("/").join(path.sep);
+      const extendName = camelCase(path.basename(normalizedFile, ".js"));
+
+      if (extendName in app) {
+        console.warn(`[extend] skip ${extendName}: key already exists on app`);
+        return;
+      }
+
+      const mod = require(path.join(extendDir, normalizedFile));
+      // support factory pattern: module.exports = (app) => ({...})
+      if (typeof mod !== "function") {
+        console.warn(
+          `[extend] skip ${extendName}: module.exports is not a function`,
+        );
+        return;
+      }
+      app[extendName] = mod(app);
+    });
+  }
 };

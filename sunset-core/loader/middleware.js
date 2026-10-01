@@ -17,13 +17,22 @@ const { camelCase } = require("./utils");
  *  => app.middleware.customModule.customMiddleware
  */
 module.exports = (app) => {
-  const middlewareDir = path.join(app.businessPath, "middleware");
-
   app.middlewares = {};
 
-  const files = glob.sync("**/*.js", { cwd: middlewareDir });
+  const sunsetMiddlewareDir = path.join(
+    __dirname,
+    `..${path.sep}..${path.sep}app${path.sep}middleware`,
+  );
+  const sunsetFiles = glob.sync("**/*.js", { cwd: sunsetMiddlewareDir });
+  sunsetFiles.forEach((file) => handleFile(file, sunsetMiddlewareDir));
 
-  files.forEach((file) => {
+  const businessMiddlewareDir = path.join(app.businessPath, "middleware");
+  if (path.resolve(sunsetMiddlewareDir) !== path.resolve(businessMiddlewareDir)) {
+    const businessFiles = glob.sync("**/*.js", { cwd: businessMiddlewareDir });
+    businessFiles.forEach((file) => handleFile(file, businessMiddlewareDir));
+  }
+
+  function handleFile(file, middlewareDir) {
     // glob v7 always returns `/`-separated results regardless of platform,
     // normalize to path.sep before splitting
     const normalizedFile = file.split("/").join(path.sep);
@@ -42,5 +51,5 @@ module.exports = (app) => {
     // support factory pattern: module.exports = (app) => (ctx, next) => {}
     target[moduleName] =
       typeof middleware === "function" ? middleware(app) : middleware;
-  });
+  }
 };

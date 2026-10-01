@@ -25,7 +25,7 @@ Object.keys(baseConfig.entry).forEach(v => {
     // path 指向 HMR 服务端地址；timeout 对应上面的超时；reload=true 表示 HMR 失败回退整页刷新
     baseConfig.entry[v] = [
       baseConfig.entry[v],
-      `webpack-hot-middleware/client?path=http://${HOST}:${PORT}/${HMR_PATH}&timeout=${TIMEOUT}&reload=true`
+      `${require.resolve('webpack-hot-middleware/client')}?path=http://${HOST}:${PORT}/${HMR_PATH}&timeout=${TIMEOUT}&reload=true`
     ]
   }
 })

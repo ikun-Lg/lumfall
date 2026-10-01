@@ -1,5 +1,4 @@
 const path = require("path");
-const fs = require("fs");
 const glob = require("glob");
 
 /**
@@ -20,17 +19,20 @@ const glob = require("glob");
  *   app.routerSchema = { '${api}': jsonSchema, ... }
  */
 module.exports = (app) => {
-  const schemaDir = path.join(app.businessPath, "router-schema");
-
   app.routerSchema = {};
 
-  if (!fs.existsSync(schemaDir)) {
-    return;
+  const sunsetDir = path.resolve(__dirname, "..", "..");
+  const sunsetSchemaDir = path.join(sunsetDir, "app", "router-schema");
+  const sunsetFiles = glob.sync("**/*.js", { cwd: sunsetSchemaDir });
+  sunsetFiles.forEach((file) => handleFile(file, sunsetSchemaDir));
+
+  const businessSchemaDir = path.join(app.businessPath, "router-schema");
+  if (path.resolve(sunsetSchemaDir) !== path.resolve(businessSchemaDir)) {
+    const businessFiles = glob.sync("**/*.js", { cwd: businessSchemaDir });
+    businessFiles.forEach((file) => handleFile(file, businessSchemaDir));
   }
 
-  const files = glob.sync("**/*.js", { cwd: schemaDir });
-
-  files.forEach((file) => {
+  function handleFile(file, schemaDir) {
     // glob v7 always returns `/`-separated results regardless of platform,
     // normalize to path.sep before joining
     const normalizedFile = file.split("/").join(path.sep);
@@ -43,5 +45,5 @@ module.exports = (app) => {
     }
 
     Object.assign(app.routerSchema, schemaMap);
-  });
+  }
 };
