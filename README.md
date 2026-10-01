@@ -88,6 +88,32 @@ Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责
 
 配置按以下顺序浅合并，后面的配置覆盖前面的同名键：框架 `config.default.js`、业务 `config.default.js`、框架环境配置、业务环境配置。配置模块可导出对象，也可导出接收 `app` 并返回对象的函数。
 
+## Plugins
+
+`serviceStart({ plugins })` 可选接收插件描述符数组。插件按声明顺序稳定排序；每个插件的 `dependencies` 会先于它注册。`register(app)` 在内置/业务 loader、config 和 extend 完成后、全局 middleware 与 router 注册前同步执行；返回的普通对象会挂载到 `app.plugins[name]`。省略 `plugins` 时保持原有启动路径。
+
+```js
+serviceStart({
+	plugins: [
+		{
+			name: "database",
+			register(app) {
+				return { connect: () => app.services.database.connect() };
+			},
+		},
+		{
+			name: "feature-module",
+			dependencies: ["database"],
+			register(app) {
+				return { database: app.plugins.database };
+			},
+		},
+	],
+});
+```
+
+插件必须有唯一非空 `name` 和同步 `register(app)` 函数。依赖缺失、循环、重复名称、异步注册或非法返回值都会使启动失败，并给出插件级诊断。
+
 ## Dashboard Model 配置
 
 Dashboard 使用 Model + Project 两层 CommonJS 配置：Model 声明可复用的菜单骨架，Project 声明具体项目的信息和菜单差异。框架启动时扫描业务项目根目录下的 `model/`，将每个 Project 与所属 Model 合并；因此这些配置不放在 `app/` 中。

@@ -10,6 +10,7 @@ const controllerLoader = require("./loader/controller");
 const serviceLoader = require("./loader/service");
 const configLoader = require("./loader/config");
 const extendLoader = require("./loader/extend");
+const registerPlugins = require("./plugins");
 
 const { sep } = path;
 
@@ -57,6 +58,8 @@ module.exports = {
     extendLoader(app);
     console.log(`[start] load extend done`);
     console.log(app.customExtend);
+
+    registerPlugins(app, options.plugins);
 
     // global middleware: skip business one when identical to lumfall's, else app.use registers twice
     const lumfallMiddlewarePath = path.resolve(
