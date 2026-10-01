@@ -1,6 +1,6 @@
 {
   "name": "lumfall",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Lumfall is a Koa-based full-stack framework with directory-driven auto-loading, Vue page system, and Webpack frontend build support.",
   "main": "index.js",
   "files": [
