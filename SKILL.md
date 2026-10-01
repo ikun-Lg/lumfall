@@ -1,306 +1,441 @@
 ---
 name: lumfall
-description: Lumfall framework + demo business project conventions. This repo contains the framework project in lumfall/ and a real business project in lumfall-demo/ that uses the framework via require("lumfall"). The skill describes the actual loader behavior, app path conventions, and the difference between framework-owned code and business-owned code.
+description: 用 Lumfall 框架开发业务项目的 AI 指南。当你要新建或修改一个 Koa + Vue + Webpack 的业务项目、并希望使用 lumfall 提供的目录自动加载、配置合并、路由与页面构建、安全策略、健康检查等能力时使用。覆盖业务项目初始化、目录约定与挂载点、写 API 与页面的步骤、配置、安全、生命周期、插件、诊断清单、monitoring，以及常见错误自查。
 ---
 
-# Lumfall 框架与 demo 业务项目约定
+# Lumfall 框架使用指南
 
-这个工作区里有两个层次：
+## 0. 这份文档怎么用
 
-- `lumfall/`：框架项目本体，负责 Koa 启动、loader、配置、路由、前端构建和通用能力。
-- `lumfall-demo/`：业务项目，真正的应用代码放在这里，它通过 `require("lumfall")` 使用框架。
+- 你要写的是**业务项目**：框架以 npm 包 `lumfall` 的形式被依赖，业务代码写在业务项目自己的目录里，**不要改框架本体**（`lumfall-core/`、框架自带的 `app/`）。
+- 业务项目可以是任意目录、任意名字，下文统一用 `<app-root>` 表示业务项目根目录。框架对你项目叫什么、放在哪里没有假设，`lumfall-demo/` 只是本工作区里的一个可选参考实现，不是必须的目录名。
+- 分工：
+  - 框架提供：启动器、loader、配置合并、路由、前端构建管线、health 接口、内置 dashboard/health 页面与 dashboard 数据 API、安全策略、生命周期、插件、诊断清单、monitoring
+  - 业务提供：`config/`、`app/controller`、`app/service`、`app/router`、`app/router-schema`、`app/middleware`、`app/extend`、`app/pages`、`model/`
+- **业务根目录 = 进程的 `process.cwd()`**：启动服务与执行构建都必须在 `<app-root>` 下运行，否则框架会加载错目录。
 
-要写代码前，必须先分清：
+## 1. 框架是什么
 
-- 框架自带目录：`lumfall/app/`, `lumfall/lumfall-core/`, `lumfall/config/`
-- 业务目录：`lumfall-demo/app/`, `lumfall-demo/config/`, `lumfall-demo/model/`
+Koa 2.7 + koa-router 7 + koa-nunjucks-2 + koa-bodyparser + Vue 3 + Webpack 5，按目录自动加载，用 `_ENV` 区分环境。
 
-框架启动时并不是只看当前仓库目录，而是用 `process.cwd()` 作为业务根目录；因此业务项目在实际运行时通常从 `lumfall-demo/` 目录启动，`app.businessPath` 会指向 `process.cwd()/app`。
+```sh
+pnpm add lumfall
+```
 
-## 1. 项目关系与入口
+服务端只需要一个入口文件；前端由 Webpack 按页面入口自动打包，产物给 Koa 渲染。
 
-### 1.1 框架入口
+## 2. 从零搭一个业务项目
 
-在 `lumfall/index.js` 中，框架对外导出：
+```text
+<app-root>/
+├── server.js                  # 服务端入口：serviceStart()
+├── build.js                   # 前端构建入口：frontendBuild()
+├── package.json
+├── config/
+│   ├── config.default.js
+│   ├── config.local.js        # 可选
+│   ├── config.beta.js         # 可选
+│   └── config.prod.js         # 可选
+├── model/                     # 可选，Dashboard 的 Model + Project 配置
+└── app/
+    ├── middleware.js          # 可选，注册全局 Koa 中间件
+    ├── middleware/            # 可复用中间件，挂到 app.middlewares
+    ├── controller/            # 挂到 app.controllers
+    ├── service/               # 挂到 app.services
+    ├── router/                # 注册路由
+    ├── router-schema/         # API 参数 JSON Schema
+    ├── extend/                # 返回值直接挂到 app
+    ├── pages/                 # Vue 页面，entry.<name>.js 是入口
+    ├── webpack.config.js      # 可选，扩展 Webpack 配置
+    └── public/                # 静态文件；构建产物在 app/public/dist/
+```
+
+`server.js`：
+
+```js
+const { serviceStart } = require("lumfall");
+
+const app = serviceStart({
+  name: "my-app",
+  homePath: "/view/health",
+});
+
+module.exports = app;
+```
+
+`build.js`：
+
+```js
+const { frontendBuild } = require("lumfall");
+
+frontendBuild(process.env._ENV);
+```
+
+`package.json`：
+
+```json
+{
+  "scripts": {
+    "dev": "_ENV=local node server.js",
+    "prod": "_ENV=prod node server.js",
+    "build:dev": "_ENV=local node build.js",
+    "build:prod": "_ENV=prod node build.js",
+    "start:prod": "pnpm build:prod && pnpm prod",
+    "new-page": "node ./node_modules/lumfall/scripts/generate-page.js"
+  }
+}
+```
+
+`serviceStart(options)` 支持的选项：
+
+| 选项 | 作用 |
+| --- | --- |
+| `name` | 应用名，渲染页面模板时使用 |
+| `homePath` | 完全未命中路由时的 302 兜底目标 |
+| `configSchema` | 校验合并后配置的 JSON Schema |
+| `lifecycle` | 启动 / 停止 hook |
+| `plugins` | 插件描述符数组 |
+| `monitoring` | 请求级观测 hook |
+
+注意：
+
+- 完全不传参时 `homePath` 默认 `/view/health`；一旦传了对象却没写 `homePath`，兜底重定向会变成 `/`，需要显式声明
+- 服务默认监听 `0.0.0.0:3000`，用 `IP` / `PORT` 环境变量覆盖
+- `frontendBuild(env)` 只认 `"local"`（启动 Webpack 开发服务，默认 `127.0.0.1:9002`）和 `"prod"`，其他值什么都不做
+- 环境用 `_ENV` ∈ `local` / `beta` / `prod`（缺省 `local`），**不是** `NODE_ENV`
+
+## 3. 启动流程与加载顺序
+
+`serviceStart()` 内部固定按这个顺序装配，全部同步执行：
+
+```js
+app.baseDir = process.cwd();
+app.businessPath = path.resolve(app.baseDir, "app");
+
+middlewareLoader(app);      // app.middlewares
+routerSchemaLoader(app);    // app.routerSchema
+controllerLoader(app);      // app.controllers（类在这里被 new）
+serviceLoader(app);         // app.services（类在这里被 new）
+configLoader(app);          // app.config
+extendLoader(app);          // app.<extendName>
+
+registerPlugins(app, options.plugins);              // app.plugins
+
+require("<lumfall>/app/middleware.js")(app);        // 框架全局中间件
+require("<app-root>/app/middleware.js")(app);       // 业务全局中间件
+
+routerLoader(app);                                  // app.router + 兜底 302 路由
+app.diagnostics = createDiagnostics(app);           // app.diagnostics.getManifest()
+
+app.server = app.listen(PORT || 3000, IP || "0.0.0.0");
+```
+
+由顺序推出三条硬约束：
+
+- `app.config` 在 controller / service 工厂执行期还不存在 → 只在请求阶段读配置
+- controller 比 service 先加载 → 不要在 controller 工厂或构造期取 `app.services`（基类的 `this.services` getter 是安全的）
+- 任何 loader 遇到非法导出会直接抛错并中断启动，不会静默跳过 → 导出形状必须严格按约定
+
+其他事实：`app.stop()` 返回 Promise（`beforeStop` → 关闭 server → `afterStop`，可重复调用）；框架与业务同名类别的文件都会被加载，页面入口同名时业务覆盖框架。
+
+## 4. 目录约定与挂载点
+
+文件名 / 目录名用 `kebab-case` 或 `snake_case`，加载后转 `camelCase`。
+
+| 业务目录 | 导出约定 | 挂载结果 |
+| --- | --- | --- |
+| `app/middleware/**/*.js` | `(app) => (ctx, next) => {}` | `app.middlewares.<dir>.<name>` |
+| `app/controller/**/*.js` | `(app) => class` | `app.controllers.<dir>.<name>`，启动时 `new` |
+| `app/service/**/*.js` | `(app) => class` | `app.services.<dir>.<name>`，启动时 `new` |
+| `app/extend/**/*.js` | `(app) => object` | 直接挂到 `app`，例如 `app.logger` |
+| `app/router/**/*.js` | `(app, router) => {}` | 注册到 `app.router` |
+| `app/router-schema/**/*.js` | schema 对象或 `(app) => map` | 合并进 `app.routerSchema` |
+| `app/middleware.js` | `(app) => { app.use(...) }` | 全局中间件注册入口 |
+
+例子：`app/service/user-service.js` → `app.services.userService`；`app/controller/admin/user-list.js` → `app.controllers.admin.userList`。
+
+命名与路径注意：
+
+- 一律用 `path.join` / `path.resolve` 和 `path.sep`，不要硬编码 `/`
+- 例外：`glob` v7 的结果始终用 `/` 分隔，拼接前先按 `/` 拆开再 `join(path.sep)`
+- 业务路径统一走 `app.businessPath`，不要用 `__dirname`
+
+## 5. 写一个 API：四步
+
+**1）service** — `app/service/<name>.js`，工厂返回 class：
+
+```js
+const BaseService = require("lumfall").Service.Base;
+
+module.exports = (app) => class ArticleService extends BaseService(app) {
+  async list({ page = 1, size = 20 }) {
+    // 这里可以读 this.config / this.app.services
+    return { data: [], total: 0, page, size };
+  }
+};
+```
+
+**2）controller** — `app/controller/<name>.js`，工厂返回 class，继承 `Controller.Base`：
+
+```js
+const BaseController = require("lumfall").Controller.Base;
+
+module.exports = (app) => class ArticleController extends BaseController(app) {
+  async getList(ctx) {
+    const { article: articleService } = this.services; // 请求阶段取，安全
+    const { data, total } = await articleService.list({
+      page: Number(ctx.request.query.page) || 1,
+      size: Number(ctx.request.query.pageSize) || 20,
+    });
+    return this.success(ctx, data, { total });
+  }
+};
+```
+
+基类给你 `this.services`（= `app.services`）、`this.config`（= `app.config`），以及两个统一响应方法：
+
+- `this.success(ctx, data, metadata)` → `{ success: true, data, metadata }`
+- `this.fail(ctx, message, code)` → `{ success: false, message, code }`
+
+两者都是 HTTP 200 + 业务码，前端按 `success` / `code` 判断。
+
+**3）router** — `app/router/<name>.js`：
+
+```js
+module.exports = (app, router) => {
+  const { article: articleController } = app.controllers;
+  router.get("/api/article/list", articleController.getList.bind(articleController));
+};
+```
+
+路由文件只负责把 URL 绑到 controller 方法，可选挂中间件：
+`router.post("/api/article", app.middlewares.apiParamsVerify, controller.create.bind(controller))`。
+
+**4）router-schema** — `app/router-schema/<name>.js`，声明参数校验：
 
 ```js
 module.exports = {
-  Controller: { Base: require("./app/controller/base.js") },
-  Service: { Base: require("./app/service/base.js") },
-  frontendBuild(env) { ... },
-  serviceStart(options = { homePath: "/view/health", name: "lumfall" }) {
-    return LumfallCore.start(options);
+  "/api/article/list": {
+    get: {
+      query: {
+        type: "object",
+        properties: {
+          page: { type: "integer", minimum: 1 },
+          pageSize: { type: "integer", minimum: 1, maximum: 200 },
+        },
+      },
+    },
   },
 };
 ```
 
-也就是说：
+约定与行为：
 
-- `frontendBuild(env)` 负责前端构建
-- `serviceStart(options)` 会创建 Koa app 并启动
+- key 必须是已注册路由的 path，method 必须全小写且该路由已注册，否则**启动失败**
+- 只作用于 `/api/` 开头的请求，用 Ajv（JSON Schema draft-07 风格）校验 `headers` / `body` / `query` / `params`
+- 校验失败返回 HTTP 200 + `{ success: false, code: 442, message }`
 
-### 1.2 业务项目入口
+## 6. 写页面
 
-示例业务项目 `lumfall-demo/server.js`：
+页面放在 `app/pages/<page-name>/`，入口文件名必须是 `entry.<page-name>.js`：
 
-```js
-const { serviceStart } = require("lumfall");
-const app = serviceStart();
+```sh
+# package.json 里配了 new-page 脚本时（见第 2 节）
+pnpm new-page project-list            # 生成 entry.project-list.js + project-list.vue
+pnpm new-page report --header         # 额外套 HeaderContainer
+
+# 没有配脚本时直接调用框架的脚手架
+node ./node_modules/lumfall/scripts/generate-page.js project-list
 ```
 
-而 `lumfall-demo/build.js` 做的是前端构建：
+- 页面名必须是 kebab-case，已存在的目录会被拒绝
+- 访问路径是 `/view/<page-name>`
+- 未发现的页面 → HTTP 404 + code `4041`；页面已发现但没构建出 `app/public/dist/entry.<name>.tpl` → HTTP 503 + code `5031`
+- 页面入口和框架自带页面重名时，业务页面生效
+
+入口文件通常长这样（`$lumfallBoot` 是框架提供的启动器别名）：
 
 ```js
-const { frontendBuild } = require("lumfall");
-frontendBuild(process.env._ENV);
+import boot from "$lumfallBoot";
+import Page from "./project-list.vue";
+
+boot(Page);
 ```
 
-这说明：
+Webpack 别名可用：`$lumfallPage`、`$lumfallBoot`、`$lumfallCommon`、`$lumfallCurl`、`$lumfallUtils`、`$lumfallWidgets`、`$lumfallStore`、`$lumfallAssert`、`$lumfallHeaderContainer`、`$lumfallSchemaForm`、`$lumfallSchemaSearchBar`、`$lumfallSchemaTable`、`$lumfallSiderContainer`。
 
-- `lumfall-demo` 是业务项目
-- `lumfall` 是框架项目
-- 业务代码不应该在框架根目录里随意写；应该写在业务项目的 `app/`、`router/`、`service/` 等目录中
+需要改 Webpack 时，在 `app/webpack.config.js` 导出配置对象，会与框架配置 `merge.smart` 合并。
 
-## 2. 真正的启动流程
+构建产物：dev 在 `app/public/dist/dev/`，prod 在 `app/public/dist/prod/`；两种模式都会把页面模板写成 `app/public/dist/entry.<name>.tpl` 供 Koa 渲染。
 
-`LumfallCore.start()` 在 `lumfall/lumfall-core/index.js` 中定义，顺序固定：
+## 7. 配置
+
+四层浅合并，后面的覆盖前面的同名键：
 
 ```text
-middleware -> router-schema -> controller -> service -> config -> extend -> router
+框架 config.default.js -> 业务 config.default.js -> 框架 config.<env>.js -> 业务 config.<env>.js
 ```
 
-核心逻辑：
+- 也可以导出 `(app) => object` 工厂，但必须返回普通对象（否则启动失败）
+- 不在请求阶段不要读 `app.config`
+- 需要强约束时用 `serviceStart({ configSchema })`，不匹配会让启动失败并指出环境、字段路径和原因
 
 ```js
-const app = new Koa();
-app.baseDir = process.cwd();
-app.businessPath = path.resolve(app.baseDir, `.${sep}app`);
-app.env = env();
-```
-
-启动时 framework 会按这个顺序装配 `app`：
-
-- `app.middlewares`
-- `app.routerSchema`
-- `app.controllers`
-- `app.services`
-- `app.config`
-- `app.customExtend`
-- `router.routes() / router.allowedMethods()`
-
-注意：
-
-- `app.businessPath` 不是框架自己的 `__dirname`，而是运行时业务项目的 `process.cwd()/app`
-- 所以把 `__dirname` 当业务路径会加载错目录；这是最常见错误
-
-## 3. loader 约定
-
-所有 loader 都是工厂函数，统一签名：
-
-```js
-module.exports = (app) => { ... }
-```
-
-### 3.1 controller
-
-`lumfall/lumfall-core/loader/controller.js` 会扫描：
-
-- framework 内置 `app/controller`
-- business `app.businessPath/controller`
-
-然后转成：
-
-```js
-app.controllers.customModule.customController
-```
-
-控制器工厂必须返回 class：
-
-```js
-module.exports = (app) => class UserController {
-  async getList(ctx) { ... }
+// config/config.default.js
+module.exports = {
+  name: "my-app",
+  apiBasePath: "/api",
+  security: {
+    apiSignature: { enabled: false, maxAgeMs: 600000 },
+    projectKey: { enabled: true, headerName: "project_key" },
+  },
 };
 ```
 
-### 3.2 service
+## 8. 安全策略
 
-同样是工厂返回 class，挂载到 `app.services`。注意：
+`config.security` 两个开关，框架默认不提供这段配置，等价于「签名关闭 + project key 开启」：
 
-- controller 在 service 之前加载
-- 因此不能在 controller 构造期间直接读取 `this.services`
-- 推荐用 `this.app.services` 或 getter 延迟访问
+- `apiSignature.enabled = true`：只校验 `/api` 请求，按 `md5(secret + "_" + timestamp)` 比对，客户端用 `ssign`（或 `s_sign`）传签名、`st`（或 `s_t`）传毫秒时间戳；时间差超过 `maxAgeMs` 或时间戳在未来都会失败；不配 `secret` 时退化为默认串 `lumfall`（只适合本地）
+- `projectKey`：只作用于 `/api/project/` 路径；`/api/project/model_list`、`/api/project/list` 内置豁免（可用 `freePaths` 追加），其余需要请求头 `project_key`（`headerName` 可改）
 
-### 3.3 middleware
+错误码：
 
-`lumfall/lumfall-core/loader/middleware.js` 会把目录下文件挂到 `app.middlewares`：
+| 中间件 | 触发条件 | 响应 |
+| --- | --- | --- |
+| `apiParamsVerify` | router-schema 校验不通过 | code `442` |
+| `apiSignVerify` | 缺签名、签名不匹配、时间戳非法或过期 | code `445` |
+| `projectHandler` | 缺少 `project_key` | code `446` |
 
-```js
-app.middlewares.apiParamsVerify
-```
+框架全局中间件的注册顺序是 static → nunjucks → bodyParser → errorHandler → monitoring → apiParamsVerify → securityPolicy。业务 `app/middleware.js` 是在框架之后执行 `app.use()` 的，所以业务中间件位于这一串的内层：请求会先经过框架的静态资源、模板、bodyParser、错误处理、参数校验和安全策略，再到业务中间件。
 
-直接约定：
-
-```js
-module.exports = (app) => (ctx, next) => {
-  // Koa middleware
-};
-```
-
-而根级 `app/middleware.js`（例如 `lumfall-demo/app/middleware.js`）是全局注册入口，里面要显式：
+## 9. 生命周期
 
 ```js
-module.exports = (app) => {
-  app.use(...)
-};
-```
-
-### 3.4 extend
-
-`app/extend/*.js` 直接挂到 `app` 顶层：
-
-```js
-app.logger
-app.health
-```
-
-### 3.5 router
-
-`lumfall/lumfall-core/loader/router.js` 会：
-
-- 先加载业务路由目录
-- 再加载框架路由目录
-- 最后注册兜底路由：未命中时 `302` 重定向到 `app.options.homePath`
-
-```js
-router.get("*", async (ctx) => {
-  ctx.status = 302;
-  ctx.redirect(app?.options?.homePath || "/");
+serviceStart({
+  lifecycle: {
+    beforeStart(app) {},        // loader 之前
+    beforeRouteLoad(app) {},    // 全局中间件之后、路由之前
+    afterRouteLoad(app) {},     // 路由之后、listen 之前
+    afterStart(app) {},         // listen 之后
+    onError(error, app) {},     // 启动期异常，处理后错误仍会抛出
+    async beforeStop(app) {},   // app.stop() 的第一步
+    async afterStop(app) {},    // server 关闭之后
+  },
 });
 ```
 
-### 3.6 router-schema
+- 启动期 hook 必须同步返回，返回 Promise 会让启动失败；异步初始化请在调用 `serviceStart()` 之前完成
+- 未知 hook 名或非函数会启动失败
+- teardown 用 `await app.stop()`
 
-在 `app/router-schema/*.js` 中导出的对象会合并到 `app.routerSchema`，用来配合参数校验中间件。
+## 10. 插件
 
-## 4. 命名和路径约定
-
-文件名/目录名使用 `kebab-case` 或 `snake_case`，加载后会转成 `camelCase`：
-
-- `api-params-verify.js` -> `app.middlewares.apiParamsVerify`
-- `custom-module/custom-controller.js` -> `app.controllers.customModule.customController`
-- `user-service.js` -> `app.services.userService`
-
-重要：
-
-- `app.controllers.xxx` 不是按原文件名访问，而是按 `camelCase` 访问
-- `app.businessPath` 必须用 `process.cwd()/app`，不能用 `__dirname`
-- 路径拼接用 `path.join` / `path.resolve`，不要硬编码 `/`
-
-## 5. 配置加载
-
-`lumfall/lumfall-core/loader/config.js` 实际做的是双层合并：
+`serviceStart({ plugins })` 适合把「要先于业务中间件/路由初始化」的能力（数据库、缓存、feature 模块）组装起来：
 
 ```js
-const frameworkDefaultConfig = loadConfig("default", frameworkConfigDir);
-const businessDefaultConfig = loadConfig("default", businessConfigDir);
-const frameworkEnvConfig = loadConfig(env, frameworkConfigDir);
-const businessEnvConfig = loadConfig(env, businessConfigDir);
+serviceStart({
+  plugins: [
+    { name: "database", register(app) { return { client: connect() }; } },
+    {
+      name: "article-module",
+      dependencies: ["database"],
+      register(app) { return { db: app.plugins.database.client }; },
+    },
+  ],
+});
+```
 
-app.config = {
-  ...frameworkDefaultConfig,
-  ...businessDefaultConfig,
-  ...frameworkEnvConfig,
-  ...businessEnvConfig,
+规则：`name` 唯一非空、`register(app)` 同步、返回值必须是普通对象或 `undefined`；依赖会先注册，重复名 / 缺依赖 / 循环依赖 / 异步 register 都会让启动失败；结果挂在 `app.plugins[name]`。注册时机在 loader、config、extend 之后，全局中间件与路由之前。
+
+## 11. 诊断清单与请求观测
+
+**诊断清单**（排查「文件明明写了却没生效」时非常有用）：
+
+```js
+const manifest = app.diagnostics.getManifest();
+// { version, environment, loaders, routes, pages, healthChecks }
+```
+
+`routes` 是已注册路由及方法，`pages` 是发现的页面入口（带 `framework` / `business` 来源），`healthChecks` 是已注册探针。内容可 JSON 序列化，不含凭证与探针函数。
+
+**请求观测**是可选配置，不配就是纯 passthrough：
+
+```js
+serviceStart({
+  monitoring: {
+    traceHeader: "x-trace-id",                  // 可选，默认 x-trace-id
+    onRequestStart({ traceId, method, path }) {},
+    onRequestEnd({ traceId, method, path, status, durationMs }) {},
+    onRequestError({ traceId, method, path, error, durationMs }) {},
+  },
+});
+```
+
+请求头里已有该 header 就复用，否则生成一个并回显同名响应头，trace id 同时写入 `ctx.traceId`。hook 自己抛错只记 warning，不影响响应。monitoring 位于 `errorHandler` 内侧，因此内层异常会先被记录再渲染响应。
+
+## 12. 健康检查
+
+框架自带 `app.health`（extend）和两个接口，业务只需要注册自己的依赖探针：
+
+```js
+// app/extend/health-check.js
+module.exports = (app) => {
+  app.health.register("database", async () => {
+    await app.services.db.ping();
+  });
+  return {};   // extend 的返回值会挂到 app.healthCheck（可返回 {} 占位）
 };
 ```
 
-覆盖顺序是：
+- `GET /health/live`：只证明进程能响应
+- `GET /health/ready`：并行执行已注册探针，全部通过 200，任一抛错 / 超时 / 返回 `false` 则 503；响应只含探针名与状态
+- 默认超时 3000ms，可传 `{ timeoutMs }` 调整；`app.health.list()` 可查看已注册项
+- `/view/health` 是人工查看状态的框架页面
+
+## 13. Dashboard Model 配置（可选）
+
+`model/` 放在业务项目根目录（不在 `app/` 里），框架在服务加载阶段扫描 `process.cwd()/model`：
 
 ```text
-框架 default -> 业务 default -> 框架 env -> 业务 env
+model/
+└── commerce/                # 目录名 = Model key
+    ├── model.js             # 公共模型：菜单骨架、显示名
+    └── project/
+        └── store-a.js       # 文件名 = Project key
 ```
 
-注意两点：
+- Project 与 Model 的菜单按 `key` 深度合并：同 key 覆盖字段，新 key 追加到末尾
+- 扫描器自动注入 `key`、`modelKey`，不要手写
+- `homePage` 是 Dashboard 内的路由，不含 `/view/dashboard` 前缀
+- 内置数据接口：`GET /api/project/model_list`、`GET /api/project/list?projectKey=`、`GET /api/project?projectKey=`
+- 陷阱：路径里含 `index.js` 的文件会被扫描器跳过
 
-- 用 `process.env._ENV`，不是 `NODE_ENV`
-- `config` 只能在请求阶段读取，不能在 loader 工厂执行期直接访问
+菜单模块类型：`custom`、`iframe`、`sider`、`schema`；分组菜单用 `menuType: "group"` + `subMenu`。
 
-## 6. demo 是业务项目的例子
+## 14. 常见错误自查
 
-`lumfall-demo` 里真实业务代码遵循的是框架约定，而不是框架本体结构：
+1. 从错误的目录启动 / 构建 → 业务根目录必须是 `process.cwd()`，即 `<app-root>`
+2. 用 `__dirname` 当业务路径 → 用 `app.businessPath`
+3. 在 loader 工厂执行期读 `app.config` / `app.services` → 延迟到请求阶段，或 `this.services` getter
+4. 用文件名访问挂载点 → `app.middlewares.apiParamsVerify` 而不是 `api-params-verify`
+5. controller / service 工厂返回对象而不是 class → 启动会直接失败
+6. router-schema 的 path 写错或 method 写成大写 → 启动失败
+7. 以为 `/view/<未知页面>` 会跳首页 → 实际是 404 `4041`（模板没构建则是 503 `5031`）
+8. 忘了 `_ENV`，用 `NODE_ENV` 切环境 → 配置不会生效
+9. 传了 `serviceStart({ name })` 就以为 `homePath` 有默认值 → 会退化成 `/`
+10. `frontendBuild("beta")` 不做事 → 只支持 `local` / `prod`
+11. 把业务代码写进框架仓库 → 业务代码写进 `<app-root>`，框架只作为依赖
 
-- `lumfall-demo/app/controller/business.js` 返回 class Controller，使用 `app.services`
-- `lumfall-demo/app/middleware.js` 注册全局 middleware
-- `lumfall-demo/app/router/business.js` 注册接口
-- `lumfall-demo/app/router-schema/business.js` 声明 schema
-- `lumfall-demo/app/service/business.js` 提供业务逻辑
+## 15. 命令速查
 
-例如：
+| 场景 | 命令（在 `<app-root>` 下执行） |
+| --- | --- |
+| 本地开发（前端 dev server + 服务） | `pnpm build:dev` 与 `_ENV=local node server.js`，或用 concurrently 并行 |
+| 生产构建 + 启动 | `pnpm build:prod && _ENV=prod node server.js` |
+| 生成页面 | `node ./node_modules/lumfall/scripts/generate-page.js <name> [--header]` |
+| 排查挂载问题 | 启动后读 `app.diagnostics.getManifest()` 的 `routes` / `pages` |
 
-```js
-module.exports = (app) => {
-  const BaseController = require("lumfall").Controller.Base(app);
-  return class BusinessController extends BaseController {
-    async getBusinessList(ctx) {
-      const { business: businessService } = app.services;
-      const { data, total } = businessService.getBusinessList({
-        page: Number(ctx.request.query.page) || 1,
-        size: Number(ctx.request.query.pageSize) || 50,
-      });
-      await this.success(ctx, data, { total });
-    }
-  };
-};
-```
+## 16. 参考实现（可选）
 
-这说明：业务项目的代码目标是“扩展框架”，不是“改造框架本体”。
-
-## 7. 真实开发时的判断方法
-
-遇到新代码时，优先判断它属于哪一层：
-
-- `lumfall/` 下：框架能力、loader、启动器、内置 app
-- `lumfall-demo/` 下：业务实现、接口、页面、服务逻辑
-
-如果文件在业务项目中：
-
-- 放在 `app/controller`, `app/service`, `app/router`, `app/router-schema`, `config/`, `model/`
-- 遵循工厂导出和 `camelCase` 挂载规则
-
-如果文件在框架项目中：
-
-- 只修正框架核心逻辑，例如 `lumfall-core/loader/*`, `lumfall/index.js`, `lumfall-core/env.js`
-- 不要把业务应用逻辑硬编码进框架根目录
-
-## 8. 常见误区
-
-1. 把 `lumfall` 当业务项目写代码
-   - 错：在 `lumfall/app/...` 里堆业务接口
-   - 对：把业务代码写到 `lumfall-demo/app/...`
-
-2. 用 `__dirname` 当业务目录
-   - 错：会指向当前文件所在目录，而不是业务项目根目录
-   - 对：用 `process.cwd()` + `app.businessPath`
-
-3. 在工厂执行期读取 `app.config`
-   - 错：加载期不可靠
-   - 对：只在请求阶段或方法体中读取
-
-4. 在 controller 构造时访问 `this.services`
-   - 错：因为 service 是后加载的
-   - 对：延迟获取或用 `this.app.services`
-
-5. 直接用文件名访问 `app` 属性
-   - 错：`app.middlewares.api-params-verify`
-   - 对：`app.middlewares.apiParamsVerify`
-
-## 9. 结论
-
-Lumfall 的设计是：
-
-- framework repo 负责“启动和装配能力”
-- business repo 负责“具体业务实现”
-
-`lumfall-demo` 是当前最好的业务项目示例；它证明了：你可以在另一个项目中依赖框架，并按 `app/controller` / `app/service` / `app/router` / `app/router-schema` 的约定扩展业务功能，而不必修改框架本体。
-
-遵守这套分层和加载规则，才能避免“文件存在但没挂载”或“启动时路径错位”的问题。
+本工作区同级的 `lumfall-demo/` 是一个可运行的业务项目示例，可以直接看它怎么组织 `app/controller`、`app/service`、`app/router`、`app/router-schema`、`app/pages`、`config/`、`model/`。它只是参考：换一个目录名、换一套业务代码同样成立，不要把它当成框架的固定结构。
