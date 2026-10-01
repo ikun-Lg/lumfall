@@ -19,12 +19,12 @@ const { camelCase } = require("./utils");
 module.exports = (app) => {
   app.controllers = {};
 
-  const sunsetDir = path.resolve(__dirname, "..", "..");
-  const sunsetControllerDir = path.join(sunsetDir, "app", "controller");
+  const lumfallDir = path.resolve(__dirname, "..", "..");
+  const lumfallControllerDir = path.join(lumfallDir, "app", "controller");
   const businessControllerDir = path.join(app.businessPath, "controller");
 
-  loadControllers(sunsetControllerDir);
-  if (path.resolve(sunsetControllerDir) !== path.resolve(businessControllerDir)) {
+  loadControllers(lumfallControllerDir);
+  if (path.resolve(lumfallControllerDir) !== path.resolve(businessControllerDir)) {
     loadControllers(businessControllerDir);
   }
 

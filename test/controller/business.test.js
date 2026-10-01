@@ -1,9 +1,9 @@
 const assert = require("assert");
 const supertest = require("supertest");
 const md5 = require("md5");
-const sunsetCore = require("../../sunset-core");
+const lumfallCore = require("../../lumfall-core");
 
-const signKey = "sunset";
+const signKey = "lumfall";
 const st = Date.now();
 
 describe("测试商品业务接口", function () {
@@ -14,7 +14,7 @@ describe("测试商品业务接口", function () {
   let createdProductId;
 
   it("启动服务", async () => {
-    app = await sunsetCore.start();
+    app = await lumfallCore.start();
     request = supertest(app.callback());
   });
 

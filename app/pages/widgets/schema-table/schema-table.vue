@@ -72,7 +72,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, toRefs, watch } from "vue";
-import $curl from "$sunsetCurl";
+import $curl from "$lumfallCurl";
 
 const emit = defineEmits(["operate"]);
 

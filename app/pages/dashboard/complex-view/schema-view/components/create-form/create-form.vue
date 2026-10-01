@@ -19,8 +19,8 @@
 
 <script setup>
 import { ref, inject, defineEmits } from "vue";
-import SchemaForm from "$sunsetSchemaForm";
-import $curl from "$sunsetCurl";
+import SchemaForm from "$lumfallSchemaForm";
+import $curl from "$lumfallCurl";
 import { Notification } from "@arco-design/web-vue";
 
 const { api, components } = inject("schemaViewData") || {};

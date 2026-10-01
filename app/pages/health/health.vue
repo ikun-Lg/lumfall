@@ -1,7 +1,7 @@
 <template>
   <main class="health-page">
     <header class="topbar">
-      <a class="wordmark" href="/view/health" aria-label="Sunset 健康检查首页">
+      <a class="wordmark" href="/view/health" aria-label="Lumfall 健康检查首页">
         <span class="wordmark-mark">S</span>
         <span>{{ frameworkName }} <small>SERVICE HEALTH</small></span>
       </a>
@@ -22,7 +22,7 @@
 
     <section class="overview" :class="`overview-${overallStatus}`" aria-labelledby="page-title">
       <div class="overview-copy">
-        <p class="eyebrow">SUNSET / RUNTIME STATUS</p>
+        <p class="eyebrow">LUMFALL / RUNTIME STATUS</p>
         <h1 id="page-title">服务健康</h1>
         <p class="overview-description">
           分开检查进程存活与服务就绪。依赖探针失败时，服务会暂时退出流量池。
@@ -107,7 +107,7 @@
         <span class="empty-mark" aria-hidden="true">+</span>
         <div>
           <strong>尚未注册外部依赖探针</strong>
-          <p>应用可注册数据库、缓存或关键服务检查；未注册时，只确认 Sunset 已完成启动。</p>
+          <p>应用可注册数据库、缓存或关键服务检查；未注册时，只确认 Lumfall 已完成启动。</p>
         </div>
         <a href="/health/ready" target="_blank" rel="noreferrer">就绪响应 <span aria-hidden="true">↗</span></a>
       </div>
@@ -124,8 +124,8 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
-const frameworkName = window.__SUNSET__?.name || "Sunset";
-const environment = (window.__SUNSET__?.env || "unknown").toUpperCase();
+const frameworkName = window.__LUMFALL__?.name || "Lumfall";
+const environment = (window.__LUMFALL__?.env || "unknown").toUpperCase();
 const loading = ref(false);
 const updatedAt = ref("");
 const liveResult = ref({ status: "loading", httpStatus: null, durationMs: null });

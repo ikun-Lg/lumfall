@@ -31,7 +31,7 @@
 
 <script lang="js" setup>
 import { ref, inject } from "vue";
-import $curl from "$sunsetCurl";
+import $curl from "$lumfallCurl";
 
 const { api, components } = inject("schemaViewData") || {};
 

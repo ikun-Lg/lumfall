@@ -30,8 +30,8 @@
 
 <script setup>
 import { ref } from "vue";
-import logo from "$sunsetAssert/logo.svg";
-import avatar from "$sunsetAssert/avatar.svg";
+import logo from "$lumfallAssert/logo.svg";
+import avatar from "$lumfallAssert/avatar.svg";
 
 defineProps({
   title: String,

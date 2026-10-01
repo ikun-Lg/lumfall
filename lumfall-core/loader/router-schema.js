@@ -21,13 +21,13 @@ const glob = require("glob");
 module.exports = (app) => {
   app.routerSchema = {};
 
-  const sunsetDir = path.resolve(__dirname, "..", "..");
-  const sunsetSchemaDir = path.join(sunsetDir, "app", "router-schema");
-  const sunsetFiles = glob.sync("**/*.js", { cwd: sunsetSchemaDir });
-  sunsetFiles.forEach((file) => handleFile(file, sunsetSchemaDir));
+  const lumfallDir = path.resolve(__dirname, "..", "..");
+  const lumfallSchemaDir = path.join(lumfallDir, "app", "router-schema");
+  const lumfallFiles = glob.sync("**/*.js", { cwd: lumfallSchemaDir });
+  lumfallFiles.forEach((file) => handleFile(file, lumfallSchemaDir));
 
   const businessSchemaDir = path.join(app.businessPath, "router-schema");
-  if (path.resolve(sunsetSchemaDir) !== path.resolve(businessSchemaDir)) {
+  if (path.resolve(lumfallSchemaDir) !== path.resolve(businessSchemaDir)) {
     const businessFiles = glob.sync("**/*.js", { cwd: businessSchemaDir });
     businessFiles.forEach((file) => handleFile(file, businessSchemaDir));
   }

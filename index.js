@@ -1,4 +1,4 @@
-const SunsetCore = require("./sunset-core/index");
+const LumfallCore = require("./lumfall-core/index");
 
 const FEBuildDev = require("./app/webpack/dev.js");
 const FEBuildProd = require("./app/webpack/prod.js");
@@ -19,8 +19,8 @@ module.exports = {
     }
   },
 
-  serviceStart(options = { homePath: "/view/health", name: "sunset" }) {
-    const app = SunsetCore.start(options);
+  serviceStart(options = { homePath: "/view/health", name: "lumfall" }) {
+    const app = LumfallCore.start(options);
     return app;
   },
 };

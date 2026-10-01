@@ -12,10 +12,10 @@
 import { onMounted, ref } from "vue";
 import zhCN from "@arco-design/web-vue/es/locale/lang/zh-cn";
 import HeaderView from "./complex-view/header-view/header-view.vue";
-import $curl from "$sunsetCurl";
-import { useMenuStore } from "$sunsetStore/menu.js";
-import { useProjectStore } from "$sunsetStore/project.js";
-import { dashboardPath } from "$sunsetPage/dashboard/route-path.js";
+import $curl from "$lumfallCurl";
+import { useMenuStore } from "$lumfallStore/menu.js";
+import { useProjectStore } from "$lumfallStore/project.js";
+import { dashboardPath } from "$lumfallPage/dashboard/route-path.js";
 import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();

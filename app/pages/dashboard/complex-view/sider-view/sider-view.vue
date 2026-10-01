@@ -23,11 +23,11 @@
 </template>
 
 <script setup>
-import SiderContainer from "$sunsetSiderContainer";
+import SiderContainer from "$lumfallSiderContainer";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useMenuStore } from "$sunsetStore/menu.js";
-import { dashboardPath } from "$sunsetPage/dashboard/route-path.js";
+import { useMenuStore } from "$lumfallStore/menu.js";
+import { dashboardPath } from "$lumfallPage/dashboard/route-path.js";
 import SubMenu from "./complex-view/sub-menu/sub-menu.vue";
 
 const router = useRouter();
