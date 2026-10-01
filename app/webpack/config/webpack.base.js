@@ -3,26 +3,31 @@ const fs = require("fs");
 const webpack = require("webpack");
 const { VueLoaderPlugin } = require("vue-loader");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const glob = require("glob");
 const merge = require("webpack-merge");
+const discoverPageManifest = require("../../../lumfall-core/page-manifest");
 
-const pageEntries = {};
+const pageManifest = discoverPageManifest(
+  path.resolve(__dirname, "../../pages"),
+  path.resolve(process.cwd(), "app/pages"),
+);
+const pageEntries = Object.fromEntries(
+  pageManifest.map(({ name, relativeEntry, source }) => [
+    `entry.${name}`,
+    path.resolve(
+      source === "framework"
+        ? path.resolve(__dirname, "../../pages")
+        : path.resolve(process.cwd(), "app/pages"),
+      relativeEntry,
+    ),
+  ]),
+);
 const HtmlWebpackPluginList = [];
-
 const pageDirectories = Array.from(
   new Set([
     path.resolve(__dirname, "../../pages"),
     path.resolve(process.cwd(), "app/pages"),
   ]),
 ).filter((directory) => fs.existsSync(directory));
-
-// Business pages are scanned after framework pages and can replace an entry with the same name.
-pageDirectories.forEach((directory) => {
-  glob.sync("**/entry.*.js", { cwd: directory }).forEach((relativePath) => {
-    const entryName = path.basename(relativePath, ".js");
-    pageEntries[entryName] = path.resolve(directory, relativePath);
-  });
-});
 
 Object.entries(pageEntries).forEach(([entryName, file]) => {
   HtmlWebpackPluginList.push(
