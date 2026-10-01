@@ -1,19 +1,23 @@
 # AGENTS.md
 
-Early-stage Koa-based full-stack framework ("全栈框架"). `lumfall-core/` is the framework core; `app/` is where business code lives. Only 2 commits — most of the framework is still stubs.
+Koa-based full-stack framework ("全栈框架"), published to npm as `lumfall`. `lumfall-core/` is the framework core, `app/` is the framework's built-in business code (health page, dashboard, view controller), and `config/` holds framework defaults. A sibling repository `lumfall-demo/` is a real business project that consumes this package via `require("lumfall")`.
 
 ## Layout & entrypoints
 
-- `index.js` (root) — entrypoint: calls `LumfallCore.start({...})`
-- `lumfall-core/index.js` — app bootstrap: creates Koa app, runs loaders in fixed order, `app.listen` on `PORT` (default 3000) / `IP` (default 0.0.0.0)
+- `index.js` (root) — module entry: exports `Controller.Base`, `Service.Base`, `frontendBuild(env)` (only `local`/`prod`) and `serviceStart(options)`. Executing this file directly does **not** start an HTTP server.
+- `lumfall-core/index.js` — app bootstrap: creates the Koa app, runs loaders in a fixed order, registers plugins and global middleware, starts the router, builds `app.diagnostics`, then `app.listen` on `PORT` (default 3000) / `IP` (default 0.0.0.0). Exposes `app.stop()` for teardown.
 - `lumfall-core/loader/` — one loader per concern, all invoked as `loader(app)` synchronously during `start()`
-- `app/` — business code root; **`app.businessPath` = `process.cwd()/app`, not `__dirname`**
+- `lumfall-core/page-manifest.js` — shared `entry.*.js` page discovery used by both webpack and the view controller
+- `lumfall-core/diagnostics.js` — `app.diagnostics.getManifest()`
+- `lumfall-core/plugins.js` — dependency-ordered plugin registry
+- `scripts/generate-page.js` — `pnpm new-page` scaffolding CLI
+- `app/` — framework business code root; **`app.businessPath` = `process.cwd()/app`, not `__dirname`**
 
 ## Conventions (easy to miss)
 
-- **Every loader is a factory**: `module.exports = (app) => {...}`, called with the Koa app instance during `start()`. Loaders attach to `app` (e.g. `app.middleware`, `app.config`, `app.service`).
+- **Every loader is a factory**: `module.exports = (app) => {...}`, called with the Koa app instance during `start()`. Loaders attach to `app` (e.g. `app.middlewares`, `app.controllers`, `app.services`, `app.config`, `app.routerSchema`).
 - **Loader execution order matters** (in `lumfall-core/index.js`): middleware → router-schema → controller → service → config → extend → router. E.g. middleware loads before config, so don't read `app.config` at load time — only inside request-time closures.
-- **kebab/snake-case → camelCase** when exposing files: `app/middleware/custom-module/custom-middleware.js` becomes `app.middleware.customModule.customMiddleware` (see `loader/middleware.js`, the reference implementation).
+- **kebab/snake-case → camelCase** when exposing files: `app/middleware/custom-module/custom-middleware.js` becomes `app.middlewares.customModule.customMiddleware` (see `loader/middleware.js`, the reference implementation).
 - **Middleware files export a factory**: `module.exports = (app) => (ctx, next) => {...}` — the loader invokes it with `app` at load time.
 - **Env**: `process.env._ENV` ∈ `local | beta | prod`, defaults to `local` (`lumfall-core/env.js`). Not NODE_ENV.
 - **File discovery**: use `glob` v7 (`glob.sync("**/*.js", { cwd: dir })`), already a dependency.
@@ -29,11 +33,14 @@ Early-stage Koa-based full-stack framework ("全栈框架"). `lumfall-core/` is 
 
 ## Status
 
-Implemented: `loader/middleware.js`, `loader/controller.js` (class factory, `new` at load time), `loader/service.js` (class factory), `loader/config.js` (default + env merge), `loader/router-schema.js`, `env.js`. Stubs (empty `module.exports = (app) => {}`): `loader/extend.js`, `loader/router.js`. Follow the middleware loader's factory style when implementing the rest.
+All loaders are implemented (`middleware`, `router-schema`, `controller`, `service`, `config`, `extend`, `router`), together with lifecycle hooks, the plugin registry, the diagnostics manifest, opt-in monitoring, the security policy middleware pair, page-manifest validation and the page scaffolding CLI. `pnpm test` covers these contracts.
 
 ## Commands
 
-- Lint: `pnpm lint` (runs `eslint --fix --ext js,vue .`) — this is the **only** npm script; there is no test/build/start script yet
-- `node --check <file>` for syntax verification
-- Dependencies live in root `node_modules`; framework files must be run from repo root or with `NODE_PATH` set
-- `ghooks` validates commit messages on commit (`validate-commit-msg`); commits so far use `init: <描述>` style
+- Test: `pnpm test` (`_ENV=local` + Mocha; suites bind `PORT=0`, so they do not need a free fixed port)
+- Lint: `pnpm lint` (`eslint --fix --ext js,vue .`)
+- Scaffold: `pnpm new-page <name> [--header]`
+- This repo has **no** `build:*`, `start:*` or `dev` script; frontend build and server startup belong to the business project (`lumfall-demo/` has `build:dev` / `build:prod` / `dev` / `prod`)
+- `node --check <file>` for quick syntax verification
+- `ghooks` + `validate-commit-msg` validate commit messages on commit (conventional commits)
+- Releases are manual: bump `version`, commit, tag `vX.Y.Z`, then `npm publish --registry=https://registry.npmjs.org/`. npm 2FA is `auth-and-writes`, so the OTP must be typed by a human.

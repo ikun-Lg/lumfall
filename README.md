@@ -4,15 +4,17 @@ Lumfall 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载�
 
 ## 功能概览
 
-- 基于 Koa 的应用启动与中间件管线
-- 自动加载业务 middleware、controller、service、extend、router 和 router-schema
-- 按 `_ENV` 选择并合并默认配置与环境配置
-- Vue 页面入口自动发现、开发构建和生产构建
-- 内置健康检查接口与状态页
+- 基于 Koa 的应用启动、中间件管线与生命周期 hook
+- 按目录自动加载业务 middleware、controller、service、extend、router 和 router-schema，导出形状非法时启动即失败
+- 按 `_ENV` 选择并合并默认配置与环境配置，可选用 JSON Schema 校验合并结果
+- Vue 页面入口自动发现、开发构建与生产构建，页面重名和构建缺失有明确错误码
+- 安全策略：API 签名校验与 project key 校验
+- 可选插件机制、请求级 monitoring hook，以及运行时可读的诊断清单
+- 内置健康检查接口与状态页，并提供页面脚手架命令
 
 ## 环境要求
 
-- Node.js
+- Node.js（Koa 2 + Vue 3 + Webpack 5，建议使用 LTS 版本）
 - pnpm（仓库声明的包管理器版本为 `pnpm@10.30.0`）
 
 ## 在业务项目中使用
@@ -22,6 +24,8 @@ Lumfall 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载�
 ```sh
 pnpm add lumfall
 ```
+
+本仓库同级的 `lumfall-demo/` 就是一个可直接运行的业务项目示例，它通过 `require("lumfall")` 使用已发布的框架版本；本地联调框架改动时，也可以临时把它改成 `link:../lumfall`。
 
 在业务项目入口显式启动服务：
 
@@ -34,7 +38,18 @@ serviceStart({
 });
 ```
 
-`serviceStart(options)` 返回 Koa app。未匹配的请求会重定向到 `options.homePath`，缺省为 `/`。服务默认监听 `0.0.0.0:3000`，可通过 `IP` 和 `PORT` 环境变量调整。
+`serviceStart(options)` 返回 Koa app，服务默认监听 `0.0.0.0:3000`，可通过 `IP` 和 `PORT` 环境变量调整。可用选项：
+
+| 选项 | 说明 |
+| --- | --- |
+| `name` | 应用名，渲染页面模板时使用 |
+| `homePath` | 兜底重定向目标；未命中任何路由的请求会 302 到这里 |
+| `configSchema` | 校验合并后配置的 JSON Schema，见「配置加载」 |
+| `lifecycle` | 启动与停止 hook，见「生命周期」 |
+| `plugins` | 插件描述符数组，见「插件（Plugins）」 |
+| `monitoring` | 请求级观测 hook，见「请求观测（Monitoring 与 tracing）」 |
+
+不传参数时 `homePath` 默认 `/view/health`；该默认值只在完全省略参数时生效，传入对象但未声明 `homePath` 时兜底重定向会退化为 `/`。另外，`/view/<name>` 由页面控制器显式处理，未知页面返回 404，不会走兜底重定向。
 
 在业务项目目录下运行启动入口，使框架能从当前工作目录解析 `app/` 和 `config/`：
 
@@ -48,35 +63,48 @@ _ENV=local node server.js
 
 ```text
 your-app/
-├── server.js                 # 调用 serviceStart() 的应用入口
+├── server.js                  # 调用 serviceStart() 的应用入口
 ├── config/
 │   ├── config.default.js
-│   ├── config.local.js       # 可选
-│   ├── config.beta.js        # 可选
-│   └── config.prod.js        # 可选
+│   ├── config.local.js        # 可选
+│   ├── config.beta.js         # 可选
+│   └── config.prod.js         # 可选
 ├── model/
 │   └── <modelKey>/            # Dashboard 模型与项目配置
 └── app/
-		├── middleware.js         # 注册全局 Koa 中间件，可选
-		├── middleware/           # 可复用中间件
-		├── router/               # 路由注册
-		├── router-schema/        # API 参数 JSON Schema
-		├── controller/           # 请求处理
-		├── service/              # 业务服务
-		├── extend/                # 挂载到 Koa app 的扩展
-		├── pages/                 # Vue 页面及 entry.*.js 入口
-		└── public/                # 静态文件与页面构建产物
+    ├── middleware.js          # 注册全局 Koa 中间件，可选
+    ├── middleware/            # 可复用中间件
+    ├── router/                # 路由注册
+    ├── router-schema/         # API 参数 JSON Schema
+    ├── controller/            # 请求处理
+    ├── service/               # 业务服务
+    ├── extend/                # 挂载到 Koa app 的扩展
+    ├── pages/                 # Vue 页面及 entry.*.js 入口
+    ├── public/                # 静态文件与页面构建产物
+    └── webpack.config.js      # 可选，扩展 Webpack 配置
 ```
 
 框架以启动时的 `process.cwd()` 作为业务项目根目录，因此应从业务项目根目录启动进程。
 
-## Page manifest
+## 路由与页面渲染
 
-Webpack 与运行时共用 `entry.<name>.js` 页面发现规则。框架页和业务页重名时业务页覆盖框架页；同一来源中出现重复 page name 会在构建/启动时给出两个冲突入口路径。`/view/<name>` 只渲染已发现的页面：未知页面返回 HTTP 404（code `4041`），已发现但缺少 `app/public/dist/entry.<name>.tpl` 构建产物时返回 HTTP 503（code `5031`），不会静默重定向首页。
+路由由 `app/router/**/*.js` 注册；未命中任何路由的请求由框架兜底路由 302 重定向到 `options.homePath`。
+
+Webpack 与运行时共用 `entry.<name>.js` 页面发现规则，扫描框架 `app/pages/` 与业务 `app/pages/`。框架页和业务页重名时业务页覆盖框架页；同一来源中出现重名的 page name 会在构建或启动时报错，并给出两个冲突入口路径。`/view/<name>` 只渲染已发现的页面，不会静默重定向首页：
+
+| 情况 | 响应 |
+| --- | --- |
+| 页面已发现且模板已构建 | 渲染 `app/public/dist/entry.<name>.tpl` |
+| 页面未发现 | HTTP 404，code `4041` |
+| 页面已发现但模板缺失（未构建） | HTTP 503，code `5031` |
+
+`app.diagnostics.getManifest()` 返回同一份页面清单，见「诊断清单（Diagnostics manifest）」。
 
 ## 自动加载约定
 
 框架内置实现与业务项目中同名类别的文件都会加载。文件名和子目录名会转换为 camelCase，例如 `app/service/user-service.js` 会挂载为 `app.services.userService`，`app/middleware/admin/auth-check.js` 会挂载为 `app.middlewares.admin.authCheck`。
+
+Loader 装配顺序固定为 middleware → router-schema → controller → service → config → extend → router，随后依次注册插件、全局中间件和路由。也就是说 controller 与 service 的工厂函数执行时，`app.config` 和 `app.services` 还不存在，需要通过 `this.app.*` 或 getter 延迟到请求阶段读取。
 
 | 目录/入口 | 导出约定 | 加载后的用法 |
 | --- | --- | --- |
@@ -90,9 +118,19 @@ Webpack 与运行时共用 `entry.<name>.js` 页面发现规则。框架页和�
 
 Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责把 URL 映射到控制器方法。全局中间件按需使用 `app.middlewares` 中已加载的中间件。
 
-## Security policy
+## 安全策略（Security policy）
 
-`config.security` 集中控制 API 签名和 project key 策略。默认签名验证关闭以兼容现有客户端，`/api/project/**` 的 project key 校验默认开启；`/api/project/model_list` 与 `/api/project/list` 默认不要求 project key。
+`config.security` 集中控制 API 签名和 project key 策略。框架默认不提供 `security` 配置：签名校验视为关闭，`/api/project/**` 的 project key 校验默认开启；其中 `/api/project/model_list` 与 `/api/project/list` 是项目无关的全局接口，不受 project key 限制。配置文件本身的加载与合并规则见下一节「配置加载」。
+
+被拦截时统一返回 HTTP 200 加业务错误码：
+
+| 中间件 | 触发条件 | 响应 |
+| --- | --- | --- |
+| `apiParamsVerify` | router-schema 校验不通过 | code `442` |
+| `apiSignVerify` | 缺少签名、签名不匹配、时间戳非数字或时间差超过 `maxAgeMs` | code `445` |
+| `projectHandler` | project key 策略开启且请求未携带 `project_key` | code `446` |
+
+中间件的注册顺序为 static → nunjucks → bodyParser → errorHandler → monitoring → apiParamsVerify → securityPolicy，即在参数校验之后先校验签名、再校验 project key。
 
 ```js
 module.exports = {
@@ -111,7 +149,9 @@ module.exports = {
 };
 ```
 
-签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
+签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。客户端通过 `ssign`（或 `s_sign`）请求头传签名、`st`（或 `s_t`）请求头传时间戳，请求头名在 Node 中统一为小写。未配置 `secret` 时会退化为内置默认串 `lumfall`，仅适合本地联调；生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
+
+## 配置加载
 
 配置按以下顺序浅合并，后面的配置覆盖前面的同名键：框架 `config.default.js`、业务 `config.default.js`、框架环境配置、业务环境配置。配置模块可导出对象，也可导出接收 `app` 并返回对象的函数。
 
@@ -154,32 +194,12 @@ const app = serviceStart({
 
 await app.stop();
 ```
-## Security policy
 
-`config.security` 集中控制 API 签名和 project key 策略。默认签名验证关闭以兼容现有客户端，`/api/project/**` 的 project key 校验默认开启；`/api/project/model_list` 与 `/api/project/list` 默认不要求 project key。
+## 诊断清单（Diagnostics manifest）
 
-```js
-module.exports = {
-	security: {
-		apiSignature: {
-			enabled: false,
-			secret: process.env.API_SIGN_SECRET,
-			maxAgeMs: 600000,
-		},
-		projectKey: {
-			enabled: true,
-			headerName: "project_key",
-			freePaths: ["/api/project/public-list"],
-		},
-	},
-};
-```
+启动后可通过 `app.diagnostics.getManifest()` 获取 JSON 可序列化的运行时清单，包含 Lumfall 版本与环境、加载器名称、已注册路由及其方法、发现的页面入口（标注 `framework` / `business` 来源）、health check 名称和超时。业务页面与框架页面重名时，清单与构建行为一致，由业务页面覆盖。清单不会复制配置对象、凭证、探针函数或异常详情。
 
-签名启用后使用 `md5(secret + "_" + timestamp)`，时间戳与当前时间的差值不能超过 `maxAgeMs`。生产环境应从环境变量或密钥管理系统提供 `secret`，不要提交真实密钥。
-## Diagnostics manifest
-
-启动后可通过 `app.diagnostics.getManifest()` 获取 JSON 可序列化的运行时清单，包含 Lumfall 版本/环境、加载器名称、注册路由及方法、发现的页面入口、health check 名称和超时。业务页面与框架页面重名时，清单与构建行为一致，由业务页面覆盖。清单不会复制配置对象、凭证、探针函数或异常详情。
-## Plugins
+## 插件（Plugins）
 
 `serviceStart({ plugins })` 可选接收插件描述符数组。插件按声明顺序稳定排序；每个插件的 `dependencies` 会先于它注册。`register(app)` 在内置/业务 loader、config 和 extend 完成后、全局 middleware 与 router 注册前同步执行；返回的普通对象会挂载到 `app.plugins[name]`。省略 `plugins` 时保持原有启动路径。
 
@@ -211,10 +231,10 @@ Dashboard 使用 Model + Project 两层 CommonJS 配置：Model 声明可复用�
 
 ```text
 model/
-└── commerce/                 # Model key 由目录名决定
-		├── model.js              # 公共模型配置
-		└── project/
-				└── store-a.js        # Project key 由文件名决定
+└── commerce/                # Model key 由目录名决定
+    ├── model.js             # 公共模型配置
+    └── project/
+        └── store-a.js       # Project key 由文件名决定
 ```
 
 Model 文件导出模式、显示名称和默认菜单：
@@ -276,7 +296,15 @@ pnpm new-page dashboard
 pnpm new-page project-list --header
 ```
 
-脚手架以当前工作目录为目标；如果业务项目通过相邻目录安装 Lumfall，也可从业务项目根目录执行 `node ../lumfall/scripts/generate-page.js dashboard`（按实际安装路径调整）。
+脚手架以当前工作目录为目标：页面名必须是 kebab-case，已存在的同名目录会被拒绝，加 `--header` 会额外生成带 `HeaderContainer` 的页面。如果业务项目通过相邻目录安装 Lumfall，也可从业务项目根目录执行 `node ../lumfall/scripts/generate-page.js dashboard`（按实际安装路径调整），或把它接到自己的脚本里：
+
+```json
+{
+	"scripts": {
+		"new-page": "node ./node_modules/lumfall/scripts/generate-page.js"
+	}
+}
+```
 
 业务项目可在自己的 `build.js` 中调用框架构建入口：
 
@@ -297,22 +325,26 @@ frontendBuild(process.env._ENV);
 }
 ```
 
-构建产物写入业务项目的 `app/public/dist/`，生产资源位于 `app/public/dist/prod/`。具体 Webpack 配置可在业务项目的 `app/webpack.config.js` 中扩展。
+`frontendBuild("local")` 会启动 Webpack 开发服务（默认 `127.0.0.1:9002`，产物在 `app/public/dist/dev/`），`frontendBuild("prod")` 输出到 `app/public/dist/prod/`；两种模式都会把页面模板写成 `app/public/dist/entry.<name>.tpl`，供 `/view/<name>` 渲染。具体 Webpack 配置可在业务项目的 `app/webpack.config.js` 中扩展。
 
 ## 仓库开发命令
 
-在 Lumfall 仓库根目录安装依赖后，可使用：
+在 Lumfall 仓库根目录安装依赖后，可用脚本只有以下三个：
 
 | 命令 | 用途 |
 | --- | --- |
-| `pnpm test` | 运行 Mocha 测试 |
+| `pnpm test` | 运行 Mocha 测试（`_ENV=local`） |
 | `pnpm lint` | ESLint 检查并自动修复 JS/Vue 文件 |
-| `pnpm build:dev` | 启动 Webpack 开发构建服务 |
-| `pnpm build:prod` | 构建生产前端资源 |
-| `pnpm new-page <name>` | 生成页面模板 |
-| `pnpm start:prod` | 构建前端资源并启动仓库内应用 |
+| `pnpm new-page <name> [--header]` | 在 `app/pages/` 下生成页面模板 |
 
-根目录的 `index.js` 是模块入口，不会在直接执行时启动 HTTP 服务。业务项目应由自己的入口调用 `serviceStart()`；`pnpm dev` 当前仅通过 nodemon 执行该模块，不会启动业务 HTTP 服务。
+仓库自身没有 `build:*`、`start:*` 或 `dev` 脚本：前端构建与启动入口都由业务项目负责。需要在框架仓库内临时验证时，可直接调用构建入口：
+
+```sh
+_ENV=local node -e "require('./index').frontendBuild('local')"  # 开发构建服务
+_ENV=prod node -e "require('./index').frontendBuild('prod')"    # 生产构建
+```
+
+根目录的 `index.js` 只是模块入口，直接执行不会启动 HTTP 服务；业务项目应由自己的入口调用 `serviceStart()`。
 
 ## 测试矩阵
 
@@ -320,13 +352,22 @@ frontendBuild(process.env._ENV);
 
 | 范围 | 覆盖内容 |
 | --- | --- |
-| 框架 API | `/health/live`、`/health/ready` 探针；`/api/project/model_list`、`/api/project/list`、`/api/project` 及其 router-schema 参数校验 |
-| loader | controller、service、middleware、extend、router-schema 的有效导出挂载 |
-| config | 默认配置与环境配置合并优先级、导出形状校验 |
-| security | `project_key` 豁免/拒绝/透传，以及请求参数校验失败返回 `442` |
+| 健康检查 | `/health/live` 不触发依赖检查；`/health/ready` 全部通过返回 200，失败或超时返回 503 且不泄露探针错误 |
+| 框架 API | `/api/project/model_list`、`/api/project/list`、`/api/project` 及其 router-schema 参数校验（`projectKey` 必填、查不到项目返回业务错误码） |
+| loader | controller、service、middleware、extend、router-schema 的有效导出挂载；非法导出抛出 `[<loader>]` 前缀错误 |
+| config | 默认/环境配置合并优先级、导出形状校验、`configSchema` 校验与字段级错误定位 |
+| 路由对齐 | router-schema 的 path 与 method 必须匹配已注册路由，method 必须小写 |
+| security | `project_key` 豁免/拒绝/透传、签名验签与时间戳窗口，以及参数校验失败返回 `442` |
+| 页面 | 同源页面重名报错、业务页覆盖框架页、未知页面返回 `4041`、模板缺失返回 `5031` |
+| 生命周期 | 启动 hook 顺序、`onError` 回传并重抛、未知或异步启动 hook 被拒绝、`app.stop()` 等待 teardown |
+| 插件 | 依赖拓扑排序、重复名称、缺失依赖、循环依赖、异步注册与非法返回值 |
+| diagnostics | 清单结构稳定、可序列化、页面入口相对路径与来源标注 |
+| monitoring | 未配置时纯 passthrough、trace id 生成与复用、自定义 trace header、hook 自身异常不影响响应 |
+| 脚手架 | 生成入口与组件、`--header` 使用框架别名、非法参数与已存在目录被拒绝 |
 
 测试通过 `PORT=0` 使用随机端口并在结束后等待 server 关闭，因此可重复运行，不依赖固定端口是否空闲。
-## Monitoring 与 tracing
+
+## 请求观测（Monitoring 与 tracing）
 
 `serviceStart({ monitoring })` 是可选的请求级观测入口；不配置时监控中间件为纯 passthrough，不写入任何响应头。配置后该中间件位于 `errorHandler` 内侧，因此内层抛出的异常会先被记录，再交给 `errorHandler` 渲染响应。
 
@@ -348,7 +389,7 @@ serviceStart({
 ## 健康检查
 
 - `GET /health/live`：存活探针，只检查服务进程能否响应。
-- `GET /health/ready`：就绪探针，执行已注册的依赖检查。
-- `/view/health`：人工查看状态的页面。
+- `GET /health/ready`：就绪探针，并行执行已注册的依赖检查；全部通过返回 200，任一失败或超时返回 503。
+- `/view/health`：人工查看 live/ready 状态与各依赖探针结果的页面。
 
-依赖探针注册方式、超时行为和部署建议见[健康检查文档](docs/health-check.md)。
+两个探针都返回 `Cache-Control: no-store`，响应只包含探针名称与状态，不返回错误对象或连接信息。探针注册方式、超时行为和部署建议见[健康检查文档](docs/health-check.md)。
