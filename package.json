@@ -8,13 +8,15 @@
     "lumfall-core/",
     "model/",
     "app/",
+    "scripts/",
     "config/",
     "docs/",
     "README.md"
   ],
   "scripts": {
     "lint": "eslint --fix --ext js,vue .",
-    "test": "_ENV='local' mocha 'test/**/*.js'"
+    "test": "_ENV='local' mocha 'test/**/*.js'",
+    "new-page": "node scripts/generate-page.js"
   },
   "repository": {
     "type": "git",
