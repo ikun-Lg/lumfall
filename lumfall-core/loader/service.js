@@ -46,10 +46,19 @@ module.exports = (app) => {
         app.services,
       );
 
-      const service = require(path.join(serviceDir, normalizedFile))(app);
-      // support factory pattern: module.exports = (app) => ({...})
-      if (typeof service !== "function") {
-        throw new Error(`Service ${moduleName} is not a class`);
+      const servicePath = path.join(serviceDir, normalizedFile);
+      const serviceFactory = require(servicePath);
+      if (typeof serviceFactory !== "function") {
+        throw new Error(
+          `[service] ${servicePath} must export a factory function`,
+        );
+      }
+
+      const service = serviceFactory(app);
+      if (typeof service !== "function" || !service.prototype) {
+        throw new Error(
+          `[service] ${servicePath} factory must return a class or constructor`,
+        );
       }
       target[moduleName] = new service(app);
     });

@@ -46,10 +46,19 @@ module.exports = (app) => {
         app.controllers,
       );
 
-      const controller = require(path.join(controllerDir, normalizedFile))(app);
-      // support factory pattern: module.exports = (app) => ({...})
-      if (typeof controller !== "function") {
-        throw new Error(`Controller ${moduleName} is not a class`);
+      const controllerPath = path.join(controllerDir, normalizedFile);
+      const controllerFactory = require(controllerPath);
+      if (typeof controllerFactory !== "function") {
+        throw new Error(
+          `[controller] ${controllerPath} must export a factory function`,
+        );
+      }
+
+      const controller = controllerFactory(app);
+      if (typeof controller !== "function" || !controller.prototype) {
+        throw new Error(
+          `[controller] ${controllerPath} factory must return a class or constructor`,
+        );
       }
       target[moduleName] = new controller(app);
     });
