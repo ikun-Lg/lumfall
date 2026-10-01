@@ -64,4 +64,24 @@ describe("diagnostics manifest", function () {
     assert.doesNotThrow(() => JSON.stringify(manifest));
     assert(!manifest.healthChecks.some((check) => check.name === "diagnostics-test"));
   });
+
+  it("includes relative page entry paths and preserves duplicate route registrations", () => {
+    app.router.stack.push(
+      { path: "/diagnostics/duplicate", methods: ["POST"] },
+      { path: "/diagnostics/duplicate", methods: ["GET"] },
+    );
+
+    const manifest = app.diagnostics.getManifest();
+    const healthPage = manifest.pages.find((page) => page.name === "health");
+    const duplicateRoutes = manifest.routes.filter(
+      (route) => route.path === "/diagnostics/duplicate",
+    );
+    const serializedRoutes = manifest.routes.map((route) =>
+      JSON.stringify([route.path, route.methods]),
+    );
+
+    assert.strictEqual(healthPage.entry, "health/entry.health.js");
+    assert.strictEqual(duplicateRoutes.length, 2);
+    assert.deepStrictEqual(serializedRoutes, serializedRoutes.slice().sort());
+  });
 });

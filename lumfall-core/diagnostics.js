@@ -18,7 +18,12 @@ module.exports = (app) => ({
         path: Array.isArray(route.path) ? route.path.slice().sort() : route.path,
         methods: route.methods.slice().sort(),
       }))
-      .sort((left, right) => JSON.stringify(left.path).localeCompare(JSON.stringify(right.path)));
+      .sort((left, right) => {
+        const pathOrder = JSON.stringify(left.path).localeCompare(
+          JSON.stringify(right.path),
+        );
+        return pathOrder || left.methods.join(",").localeCompare(right.methods.join(","));
+      });
 
     const pages = collectPages(app);
     const healthChecks = app.health?.list?.() || [];
@@ -47,7 +52,12 @@ function collectPages(app) {
   directories.forEach(({ directory, source }) => {
     glob.sync("**/entry.*.js", { cwd: directory }).forEach((file) => {
       const name = path.basename(file, ".js").replace(/^entry\./, "");
-      pages.set(name, { name, route: `/view/${name}`, source });
+      pages.set(name, {
+        name,
+        entry: file.split(path.sep).join("/"),
+        route: `/view/${name}`,
+        source,
+      });
     });
   });
 
