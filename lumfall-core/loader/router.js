@@ -26,6 +26,7 @@ module.exports = (app) => {
   if (path.resolve(lumfallRouterDir) !== path.resolve(businessRouterDir)) {
     loadRoutes(lumfallRouterDir);
   }
+  validateRouterSchema(router, app.routerSchema);
 
   function loadRoutes(routerDir) {
     if (!fs.existsSync(routerDir)) {
@@ -54,3 +55,46 @@ module.exports = (app) => {
   app.use(router.routes());
   app.use(router.allowedMethods());
 };
+
+function validateRouterSchema(router, routerSchema = {}) {
+  const routes = router.stack;
+
+  Object.entries(routerSchema).forEach(([schemaPath, methodSchemas]) => {
+    const matchingRoutes = routes.filter((route) =>
+      Array.isArray(route.path)
+        ? route.path.includes(schemaPath)
+        : route.path === schemaPath,
+    );
+
+    if (matchingRoutes.length === 0) {
+      throw new Error(
+        `[router] router-schema path "${schemaPath}" does not match a registered route`,
+      );
+    }
+
+    if (!methodSchemas || typeof methodSchemas !== "object") {
+      throw new Error(
+        `[router] router-schema methods for "${schemaPath}" must be an object`,
+      );
+    }
+
+    Object.keys(methodSchemas).forEach((method) => {
+      if (method !== method.toLowerCase()) {
+        throw new Error(
+          `[router] router-schema method "${method}" for "${schemaPath}" must be lowercase`,
+        );
+      }
+
+      const routerMethod = method.toUpperCase();
+      const methodExists = matchingRoutes.some((route) =>
+        route.methods.includes(routerMethod),
+      );
+
+      if (!methodExists) {
+        throw new Error(
+          `[router] router-schema method "${method}" for "${schemaPath}" does not match a registered route`,
+        );
+      }
+    });
+  });
+}

@@ -81,7 +81,7 @@ your-app/
 | `app/service/**/*.js` | `(app) => ServiceClass` | `app.services`；启动时实例化 |
 | `app/extend/**/*.js` | `(app) => extensionObject` | 直接挂载到 `app`，例如 `app.health` |
 | `app/router/**/*.js` | `(app, router) => { router.get(...) }` | 向 Koa Router 注册路由 |
-| `app/router-schema/**/*.js` | schema 映射对象或 `(app) => schemaMap` | 汇总到 `app.routerSchema` |
+| `app/router-schema/**/*.js` | schema 映射对象或 `(app) => schemaMap` | 汇总到 `app.routerSchema`；启动时校验 path/method 对应已注册路由 |
 | `app/middleware.js` | `(app) => { app.use(...) }` | 注册全局 Koa 中间件 |
 
 Controller 和 Service 导出工厂函数，工厂返回类；路由文件负责把 URL 映射到控制器方法。全局中间件按需使用 `app.middlewares` 中已加载的中间件。
