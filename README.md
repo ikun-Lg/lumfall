@@ -289,6 +289,19 @@ frontendBuild(process.env._ENV);
 
 根目录的 `index.js` 是模块入口，不会在直接执行时启动 HTTP 服务。业务项目应由自己的入口调用 `serviceStart()`；`pnpm dev` 当前仅通过 nodemon 执行该模块，不会启动业务 HTTP 服务。
 
+## 测试矩阵
+
+`pnpm test` 覆盖以下核心契约：
+
+| 范围 | 覆盖内容 |
+| --- | --- |
+| 框架 API | `/health/live`、`/health/ready` 探针；`/api/project/model_list`、`/api/project/list`、`/api/project` 及其 router-schema 参数校验 |
+| loader | controller、service、middleware、extend、router-schema 的有效导出挂载 |
+| config | 默认配置与环境配置合并优先级、导出形状校验 |
+| security | `project_key` 豁免/拒绝/透传，以及请求参数校验失败返回 `442` |
+
+测试通过 `PORT=0` 使用随机端口并在结束后等待 server 关闭，因此可重复运行，不依赖固定端口是否空闲。
+
 ## 健康检查
 
 - `GET /health/live`：存活探针，只检查服务进程能否响应。
