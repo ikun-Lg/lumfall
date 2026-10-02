@@ -57,6 +57,30 @@ try {
 } catch (e) {}
 
 /**
+ * 解析包的真实根目录（含 package.json 的那一层）。
+ * 优先用 <name>/package.json 精确探测；包没有根导出（如 @babel/runtime）
+ * 或探测失败时，从包的任一入口文件向上逐层回溯。
+ * require.resolve 以框架自身为上下文，npm / pnpm / 源码仓库三种布局通用。
+ */
+const sharedPackageRoot = (name) => {
+  let resolved;
+  try {
+    resolved = require.resolve(`${name}/package.json`);
+  } catch (e) {
+    resolved = require.resolve(name);
+  }
+  let dir = path.dirname(resolved);
+  while (!fs.existsSync(path.join(dir, "package.json"))) {
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      throw new Error(`[webpack] cannot locate package root of "${name}"`);
+    }
+    dir = parent;
+  }
+  return dir;
+};
+
+/**
  *  webpack basic config
  */
 module.exports = merge.smart(
@@ -142,14 +166,29 @@ module.exports = merge.smart(
           "./app/pages/widgets/schema-search-bar/complex-view/search-item-config.js",
         );
 
+        // ===== 暴露给业务代码的共享依赖（白名单） =====
+        // alias 指向「包目录」而不是入口文件，因此所有子路径 import 都可用
+        // （vue/dist/...、@arco-design/web-vue/es/icon、@babel/runtime/helpers/* 等）。
+        // 框架解析优先于业务 node_modules，运行时只有这一份实例；
+        // 业务不声明也能直接用，无需重复安装。
+        // 要暴露更多框架依赖，往 sharedDeps 里加包名即可。
+        const sharedDeps = [
+          "vue",
+          "vue-router",
+          "pinia",
+          "@arco-design/web-vue",
+          "@babel/runtime",
+          "axios",
+          "lodash",
+          "moment",
+          "md5",
+        ];
+        const sharedAliases = Object.fromEntries(
+          sharedDeps.map((name) => [name, sharedPackageRoot(name)]),
+        );
+
         return {
-          "@babel/runtime/helpers/asyncToGenerator":
-            require.resolve("@babel/runtime/helpers/asyncToGenerator"),
-          "@babel/runtime/helpers/toConsumableArray":
-            require.resolve("@babel/runtime/helpers/toConsumableArray"),
-          "@babel/runtime/regenerator":
-            require.resolve("@babel/runtime/regenerator"),
-          vue: require.resolve("vue"),
+          ...sharedAliases,
           $lumfallPage: path.resolve(__dirname, "../../pages"),
           $lumfallBoot: path.resolve(__dirname, "../../pages/boot.js"),
           $lumfallCommon: path.resolve(__dirname, "../../pages/common"),
