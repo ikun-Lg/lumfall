@@ -21,6 +21,13 @@ const pageEntries = Object.fromEntries(
     ),
   ]),
 );
+
+// 页面模板按构建模式分目录：dev 构建（_ENV=local）写 dist/dev/，
+// 其余（_ENV=prod 构建）写 dist/prod/。避免 dev/prod 模板写到同一路径互相覆盖——
+// 否则「跑过 dev 构建、直接以 prod 启动」时模板里的资源 URL 仍指向 dev server，
+// 页面白屏且无报错（issue #41）
+const tplModeDir = process.env._ENV === "local" ? "dev" : "prod";
+
 const HtmlWebpackPluginList = [];
 const pageDirectories = Array.from(
   new Set([
@@ -35,6 +42,7 @@ Object.entries(pageEntries).forEach(([entryName, file]) => {
       filename: path.resolve(
         process.cwd(),
         "./app/public/dist/",
+        tplModeDir,
         `${entryName}.tpl`,
       ),
       template: path.resolve(__dirname, "../../view/entry.tpl"),

@@ -94,7 +94,7 @@ Webpack 与运行时共用 `entry.<name>.js` 页面发现规则，扫描框架 `
 
 | 情况 | 响应 |
 | --- | --- |
-| 页面已发现且模板已构建 | 渲染 `app/public/dist/entry.<name>.tpl` |
+| 页面已发现且模板已构建 | 渲染 `app/public/dist/{dev|prod}/entry.<name>.tpl`（按 _ENV 对应目录） |
 | 页面未发现 | HTTP 404，code `4041` |
 | 页面已发现但模板缺失（未构建） | HTTP 503，code `5031` |
 
@@ -325,7 +325,7 @@ frontendBuild(process.env._ENV);
 }
 ```
 
-`frontendBuild("local")` 会启动 Webpack 开发服务（默认 `127.0.0.1:9002`，产物在 `app/public/dist/dev/`），`frontendBuild("prod")` 输出到 `app/public/dist/prod/`；两种模式都会把页面模板写成 `app/public/dist/entry.<name>.tpl`，供 `/view/<name>` 渲染。具体 Webpack 配置可在业务项目的 `app/webpack.config.js` 中扩展。
+`frontendBuild("local")` 会启动 Webpack 开发服务（默认 `127.0.0.1:9002`，产物在 `app/public/dist/dev/`），`frontendBuild("prod")` 输出到 `app/public/dist/prod/`；并把页面模板写到 `app/public/dist/dev|prod/entry.<name>.tpl`（按模式分目录），供 `/view/<name>` 渲染。具体 Webpack 配置可在业务项目的 `app/webpack.config.js` 中扩展。
 
 ## 仓库开发命令
 

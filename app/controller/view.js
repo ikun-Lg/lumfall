@@ -11,6 +11,10 @@ module.exports = (app) => {
     ),
   );
 
+  // 模板按构建模式分目录（与 webpack.base 的 tplModeDir 对应）：
+  // local 服务渲染 dist/dev/（dev 构建产物），beta/prod 服务渲染 dist/prod/
+  const tplModeDir = app.env?.get?.() === "local" ? "dev" : "prod";
+
   return class ViewController {
     /**
      * render page
@@ -32,6 +36,7 @@ module.exports = (app) => {
         app.businessPath,
         "public",
         "dist",
+        tplModeDir,
         `entry.${pageName}.tpl`,
       );
       if (!fs.existsSync(templatePath)) {
@@ -39,14 +44,16 @@ module.exports = (app) => {
         ctx.body = {
           success: false,
           code: 5031,
-          message: `Page "${pageName}" is not built`,
+          message: `Page "${pageName}" is not built. Expected template: app/public/dist/${tplModeDir}/entry.${pageName}.tpl, run "_ENV=${
+            tplModeDir === "dev" ? "local" : "prod"
+          } node build.js" first`,
         };
         return;
       }
 
       app.logger.info(`[ViewController] query: ${JSON.stringify(ctx.request.query)}`);
       app.logger.info(`[ViewController] params: ${JSON.stringify(ctx.params)}`);
-      await ctx.render(path.join("dist", `entry.${pageName}`), {
+      await ctx.render(path.join("dist", tplModeDir, `entry.${pageName}`), {
         name: app?.options?.name,
         env: app?.env?.get(),
         options: JSON.stringify(app?.options),
