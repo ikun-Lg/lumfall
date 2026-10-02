@@ -255,11 +255,11 @@ node ./node_modules/lumfall/scripts/generate-page.js project-list
 
 - 页面名必须是 kebab-case，已存在的目录会被拒绝
 - 访问路径是 `/view/<page-name>`
-- 未发现的页面 → HTTP 404 + code `4041`；页面已发现但没构建出 `app/public/dist/entry.<name>.tpl` → HTTP 503 + code `5031`
+- 未发现的页面 → HTTP 404 + code `4041`；页面已发现但没构建出 `app/public/dist/{dev|prod}/entry.<name>.tpl`（按 _ENV 对应目录）→ HTTP 503 + code `5031`
 - 页面入口和框架自带页面重名时，业务页面生效
 
 ::: warning dev / prod 模板互相覆盖
-dev 与 prod 构建把页面模板写到同一个 `app/public/dist/entry.<name>.tpl`，dev 构建产出的模板资源 URL 指向 webpack dev server（`127.0.0.1:9002`）。跑过 dev 构建后直接以 prod 模式启动（不重新 `build:prod`）会白屏——切换构建模式后必须重新执行对应构建。
+dev 与 prod 构建的页面模板已按模式分目录（`dist/dev/`、`dist/prod/`），服务按 _ENV 渲染对应目录：模式不匹配时返回 503 并提示应执行的构建命令，不再出现白屏。
 :::
 
 入口文件通常长这样（`$lumfallBoot` 是框架提供的启动器别名）：
@@ -275,7 +275,7 @@ Webpack 别名可用：`$lumfallPage`、`$lumfallBoot`、`$lumfallCommon`、`$lu
 
 需要改 Webpack 时，在 `app/webpack.config.js` 导出配置对象，会与框架配置 `merge.smart` 合并。
 
-构建产物：dev 在 `app/public/dist/dev/`，prod 在 `app/public/dist/prod/`；两种模式都会把页面模板写成 `app/public/dist/entry.<name>.tpl` 供 Koa 渲染。
+构建产物：dev 在 `app/public/dist/dev/`，prod 在 `app/public/dist/prod/`；页面模板按模式写到 `app/public/dist/dev|prod/entry.<name>.tpl` 供 Koa 渲染。
 
 ## 7. 配置
 
