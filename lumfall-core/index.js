@@ -24,6 +24,18 @@ const lifecycleHookNames = new Set([
   "afterStop",
 ]);
 
+// 挂载点叶子条目计数（目录命名空间递归、函数/实例/原始值记 1），仅用于启动摘要日志。
+// 配置可能含密钥与连接串，任何 loader 的日志都不打印内容本身（issue #43）
+const isPlainMountObject = (value) =>
+  Boolean(value) &&
+  typeof value === 'object' &&
+  Object.getPrototypeOf(value) === Object.prototype;
+
+const countLoaded = (value) =>
+  isPlainMountObject(value)
+    ? Object.values(value).reduce((sum, item) => sum + countLoaded(item), 0)
+    : 1;
+
 module.exports = {
   /**
    * Start the project
@@ -77,28 +89,23 @@ module.exports = {
       callStartupHook("beforeStart", app);
 
       middlewareLoader(app);
-      console.log(`[start] load middleware done`);
-      console.log(app.middlewares);
+      console.log(`[start] load middleware done (${countLoaded(app.middlewares)})`);
 
       routerSchemaLoader(app);
-      console.log(`[start] load router schema done`);
-      console.log(app.routerSchema);
+      console.log(`[start] load router schema done (${countLoaded(app.routerSchema)})`);
 
       controllerLoader(app);
-      console.log(`[start] load controller done`);
-      console.log(app.controllers);
+      console.log(`[start] load controller done (${countLoaded(app.controllers)})`);
 
       serviceLoader(app);
-      console.log(`[start] load service done`);
-      console.log(app.services);
+      console.log(`[start] load service done (${countLoaded(app.services)})`);
 
       configLoader(app);
-      console.log(`[start] load config done`);
-      console.log(app.config);
+      // 配置可能含密钥/连接串，不打印内容，仅输出键数量（issue #43）
+      console.log(`[start] load config done (${Object.keys(app.config).length} keys)`);
 
       extendLoader(app);
       console.log(`[start] load extend done`);
-      console.log(app.customExtend);
 
       registerPlugins(app, options.plugins);
 

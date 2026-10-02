@@ -86,10 +86,20 @@ describe("page manifest validation", () => {
     assert.match(context.body.message, /health.*not built/);
   });
 
-  it("renders a built page using the existing template name", async () => {
+  it("renders a built page using the mode-specific template directory", async () => {
     const distDir = path.join(root, "app", "public", "dist");
-    fs.mkdirSync(distDir, { recursive: true });
-    fs.writeFileSync(path.join(distDir, "entry.health.tpl"), "");
+    fs.mkdirSync(path.join(distDir, "dev"), { recursive: true });
+    fs.mkdirSync(path.join(distDir, "prod"), { recursive: true });
+    fs.writeFileSync(path.join(distDir, "dev", "entry.health.tpl"), "");
+    fs.writeFileSync(path.join(distDir, "prod", "entry.health.tpl"), "");
+
+    const context = {
+      params: { page: "health" },
+      request: { query: {} },
+      render: async (template) => {
+        renderedTemplate = template;
+      },
+    };
 
     let renderedTemplate;
     const app = {
@@ -99,16 +109,12 @@ describe("page manifest validation", () => {
       env: { get: () => "local" },
     };
     const ViewController = viewControllerFactory(app);
-    const context = {
-      params: { page: "health" },
-      request: { query: {} },
-      render: async (template) => {
-        renderedTemplate = template;
-      },
-    };
+    await new ViewController().renderPage({ ...context });
+    assert.strictEqual(renderedTemplate, path.join("dist", "dev", "entry.health"));
 
-    await new ViewController().renderPage(context);
-
-    assert.strictEqual(renderedTemplate, path.join("dist", "entry.health"));
+    const prodApp = { ...app, env: { get: () => "prod" } };
+    const ProdViewController = viewControllerFactory(prodApp);
+    await new ProdViewController().renderPage({ ...context });
+    assert.strictEqual(renderedTemplate, path.join("dist", "prod", "entry.health"));
   });
 });
