@@ -20,8 +20,10 @@ const MONITORING_HOOKS = new Set([
  *   onRequestError({ traceId, method, path, error, durationMs }),
  * }
  *
- * The middleware sits outside errorHandler, so it can observe errors thrown by
- * inner middleware; hook failures are logged and never change the response.
+ * The middleware sits INSIDE errorHandler (registered after it in
+ * app/middleware.js), so errors thrown by inner middleware reach
+ * onRequestError before errorHandler renders the response; hook failures are
+ * logged and never change the response.
  */
 module.exports = (app) => {
   const monitoring = app.options?.monitoring;
