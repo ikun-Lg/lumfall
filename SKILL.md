@@ -103,7 +103,7 @@ frontendBuild(process.env._ENV);
 
 注意：
 
-- 完全不传参时 `homePath` 默认 `/view/health`；一旦传了对象却没写 `homePath`，兜底重定向会变成 `/`，需要显式声明
+- `homePath` 默认 `/view/health`、`name` 默认 `lumfall`，**部分传参也会套用默认值**（lumfall ≥ 1.1.2）；显式传入会覆盖默认值
 - 服务默认监听 `0.0.0.0:3000`，用 `IP` / `PORT` 环境变量覆盖
 - `frontendBuild(env)` 只认 `"local"`（启动 Webpack 开发服务，默认 `127.0.0.1:9002`）和 `"prod"`，其他值什么都不做
 - 环境用 `_ENV` ∈ `local` / `beta` / `prod`（缺省 `local`），**不是** `NODE_ENV`
@@ -439,11 +439,10 @@ model/
 7. router-schema 的 path 写错或 method 写成大写 → 启动失败
 8. 以为 `/view/<未知页面>` 会跳首页 → 实际是 404 `4041`（模板没构建则是 503 `5031`）
 9. 忘了 `_ENV`，用 `NODE_ENV` 切环境 → 配置不会生效
-10. 传了 `serviceStart({ name })` 就以为 `homePath` 有默认值 → 会退化成 `/`
-11. `frontendBuild("beta")` 不做事 → 只支持 `local` / `prod`
-12. 把业务代码写进框架仓库 → 业务代码写进 `<app-root>`，框架只作为依赖
-13. pnpm 下业务页面 import `vue` / `@arco-design/web-vue` 报 `Module not found` → 这些是框架的传递依赖，必须声明进业务自己的 `package.json`（含 prod 构建需要的 `@babel/runtime`）
-14. 跑过 dev 构建后直接 prod 启动页面白屏 → dev/prod 模板同路径覆盖，重新 `_ENV=prod node build.js` 即可
+10. `frontendBuild("beta")` 不做事 → 只支持 `local` / `prod`
+11. 把业务代码写进框架仓库 → 业务代码写进 `<app-root>`，框架只作为依赖
+12. 业务页面 import `vue` / `@arco-design/web-vue` 报 `Module not found` → 用 lumfall ≥ 1.1.1（`resolve.alias` 白名单已暴露共享依赖，见第 2 节）；旧版本需在业务 `package.json` 显式声明
+13. 跑过 dev 构建后直接 prod 启动页面白屏 → dev/prod 模板同路径覆盖，重新 `_ENV=prod node build.js` 即可
 
 ## 15. 命令速查
 
