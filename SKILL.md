@@ -8,7 +8,11 @@ description: 用 Lumfall 框架开发业务项目的 AI 指南。当你要新建
 ## 0. 这份文档怎么用
 
 - 你要写的是**业务项目**：框架以 npm 包 `lumfall` 的形式被依赖，业务代码写在业务项目自己的目录里，**不要改框架本体**（`lumfall-core/`、框架自带的 `app/`）。
-- 业务项目可以是任意目录、任意名字，下文统一用 `<app-root>` 表示业务项目根目录。框架对你项目叫什么、放在哪里没有假设，`lumfall-demo/` 只是本工作区里的一个可选参考实现，不是必须的目录名。
+- 业务项目可以是任意目录、任意名字，下文统一用 `<app-root>` 表示业务项目根目录。框架对你项目叫什么、放在哪里没有假设。本工作区里：
+  - `lumfall-basic-project/` — 基础业务项目骨架（最小示例 API + 页面，新建业务项目从这里复制起步）
+  - `lumfall-business/` — B 端全栈模板（Dashboard、schema 组件、`model/` 配置的完整参考实现）
+  - `lumfall-document/` — 技术文档站模板（对标 VitePress，内置 lumfall 技术文档内容）
+  它们都只是参考：换一个目录名、换一套业务代码同样成立，不要把它们当成框架的固定结构。
 - 分工：
   - 框架提供：启动器、loader、配置合并、路由、前端构建管线、health 接口、内置 dashboard/health 页面与 dashboard 数据 API、安全策略、生命周期、插件、诊断清单、monitoring
   - 业务提供：`config/`、`app/controller`、`app/service`、`app/router`、`app/router-schema`、`app/middleware`、`app/extend`、`app/pages`、`model/`
@@ -103,6 +107,7 @@ frontendBuild(process.env._ENV);
 - 服务默认监听 `0.0.0.0:3000`，用 `IP` / `PORT` 环境变量覆盖
 - `frontendBuild(env)` 只认 `"local"`（启动 Webpack 开发服务，默认 `127.0.0.1:9002`）和 `"prod"`，其他值什么都不做
 - 环境用 `_ENV` ∈ `local` / `beta` / `prod`（缺省 `local`），**不是** `NODE_ENV`
+- **框架共享依赖对业务代码直接可用**（lumfall ≥ 1.1.1）：框架在 webpack.base 的 `resolve.alias` 维护共享依赖白名单（`sharedDeps`，alias 指向包目录、require.resolve 以框架为上下文），业务页面可直接 import `vue`、`vue-router`、`pinia`、`@arco-design/web-vue`、`@babel/runtime`、`axios`、`lodash`、`moment`、`md5` 及其子路径，无需重复安装，运行时单实例（框架解析优先于业务 node_modules）。要暴露更多库在 `sharedDeps` 加包名；框架没有的库仍需业务 `pnpm add`；旧版本（≤ 1.1.0）+ pnpm 下需显式声明
 
 ## 3. 启动流程与加载顺序
 
@@ -253,6 +258,10 @@ node ./node_modules/lumfall/scripts/generate-page.js project-list
 - 未发现的页面 → HTTP 404 + code `4041`；页面已发现但没构建出 `app/public/dist/entry.<name>.tpl` → HTTP 503 + code `5031`
 - 页面入口和框架自带页面重名时，业务页面生效
 
+::: warning dev / prod 模板互相覆盖
+dev 与 prod 构建把页面模板写到同一个 `app/public/dist/entry.<name>.tpl`，dev 构建产出的模板资源 URL 指向 webpack dev server（`127.0.0.1:9002`）。跑过 dev 构建后直接以 prod 模式启动（不重新 `build:prod`）会白屏——切换构建模式后必须重新执行对应构建。
+:::
+
 入口文件通常长这样（`$lumfallBoot` 是框架提供的启动器别名）：
 
 ```js
@@ -395,7 +404,10 @@ module.exports = (app) => {
 
 ## 13. Dashboard Model 配置（可选）
 
-`model/` 放在业务项目根目录（不在 `app/` 里），框架在服务加载阶段扫描 `process.cwd()/model`：
+`model/` 放在业务项目根目录（不在 `app/` 里），框架在服务加载阶段扫描 `process.cwd()/model`。这是框架的**声明式 Dashboard DSL**：Model + Project 两层配置（按 key 深度合并）声明菜单与页面形态，schema 模块用一份字段 schema 驱动搜索栏/表格/表单/详情四个视图。**完整编写规则以框架包内两份文档为准**：
+
+- `model/docs/dsl-guide.md` — DSL 编写规则（菜单项、moduleType 四形态、schema 模块、按钮与动态表单、接口契约、合并规则、注意事项）
+- `model/docs/dashboard-model.md` — Model 字段级速查
 
 ```text
 model/
@@ -405,13 +417,16 @@ model/
         └── store-a.js       # 文件名 = Project key
 ```
 
-- Project 与 Model 的菜单按 `key` 深度合并：同 key 覆盖字段，新 key 追加到末尾
+- Project 与 Model 的菜单按 `key` 深度合并：同 key 覆盖字段，新 key 追加到末尾；数组元素必须带 `key`
 - 扫描器自动注入 `key`、`modelKey`，不要手写
 - `homePage` 是 Dashboard 内的路由，不含 `/view/dashboard` 前缀
 - 内置数据接口：`GET /api/project/model_list`、`GET /api/project/list?projectKey=`、`GET /api/project?projectKey=`
-- 陷阱：路径里含 `index.js` 的文件会被扫描器跳过
+- schema 模块的后端接口有固定契约：`api` 是基址，列表为 `GET <api>/list`，增删改走 `POST/PUT/DELETE <api>`
+- 陷阱：路径里含 `index.js` 的文件会被扫描器跳过；sider 子菜单 custom 的 `path` 必须以 `/` 开头
 
 菜单模块类型：`custom`、`iframe`、`sider`、`schema`；分组菜单用 `menuType: "group"` + `subMenu`。
+
+**DSL 支持业务侧扩展**：在业务项目 `app/pages/` 下创建与框架同名的四个配置文件（搜索控件注册表 `widgets/schema-search-bar/complex-view/search-item-config.js`、表单控件注册表 `widgets/schema-form/form-item-config.js`、schema-view 动态组件注册表 `dashboard/complex-view/schema-view/components/component-config.js`、custom 路由 `dashboard/router.js`），框架经 webpack 别名（`$business*`）把业务注册表与默认注册表展开合并——同名覆盖、新名追加；文件不存在则用空模块，不影响默认能力。扩展契约见 lumfall-document 文档「扩展 DSL」篇。
 
 ## 14. 常见错误自查
 
@@ -420,12 +435,15 @@ model/
 3. 在 loader 工厂执行期读 `app.config` / `app.services` → 延迟到请求阶段，或 `this.services` getter
 4. 用文件名访问挂载点 → `app.middlewares.apiParamsVerify` 而不是 `api-params-verify`
 5. controller / service 工厂返回对象而不是 class → 启动会直接失败
-6. router-schema 的 path 写错或 method 写成大写 → 启动失败
-7. 以为 `/view/<未知页面>` 会跳首页 → 实际是 404 `4041`（模板没构建则是 503 `5031`）
-8. 忘了 `_ENV`，用 `NODE_ENV` 切环境 → 配置不会生效
-9. 传了 `serviceStart({ name })` 就以为 `homePath` 有默认值 → 会退化成 `/`
-10. `frontendBuild("beta")` 不做事 → 只支持 `local` / `prod`
-11. 把业务代码写进框架仓库 → 业务代码写进 `<app-root>`，框架只作为依赖
+6. `Controller.Base` / `Service.Base` 是工厂函数 → 必须 `Controller.Base(app)` 调用后再 `extends`，直接 `extends Controller.Base` 报 "not a constructor"
+7. router-schema 的 path 写错或 method 写成大写 → 启动失败
+8. 以为 `/view/<未知页面>` 会跳首页 → 实际是 404 `4041`（模板没构建则是 503 `5031`）
+9. 忘了 `_ENV`，用 `NODE_ENV` 切环境 → 配置不会生效
+10. 传了 `serviceStart({ name })` 就以为 `homePath` 有默认值 → 会退化成 `/`
+11. `frontendBuild("beta")` 不做事 → 只支持 `local` / `prod`
+12. 把业务代码写进框架仓库 → 业务代码写进 `<app-root>`，框架只作为依赖
+13. pnpm 下业务页面 import `vue` / `@arco-design/web-vue` 报 `Module not found` → 这些是框架的传递依赖，必须声明进业务自己的 `package.json`（含 prod 构建需要的 `@babel/runtime`）
+14. 跑过 dev 构建后直接 prod 启动页面白屏 → dev/prod 模板同路径覆盖，重新 `_ENV=prod node build.js` 即可
 
 ## 15. 命令速查
 
@@ -438,4 +456,10 @@ model/
 
 ## 16. 参考实现（可选）
 
-本工作区同级的 `lumfall-demo/` 是一个可运行的业务项目示例，可以直接看它怎么组织 `app/controller`、`app/service`、`app/router`、`app/router-schema`、`app/pages`、`config/`、`model/`。它只是参考：换一个目录名、换一套业务代码同样成立，不要把它当成框架的固定结构。
+本工作区同级有三个可直接参考/复用的项目：
+
+- `lumfall-basic-project/` — 基础业务项目骨架：`server.js` / `build.js` / `config/` / `app/` 全套目录约定 + 一套最小示例（`GET /api/demo/info` 读配置、`GET /api/demo/note/list` 分页、`POST /api/demo/note` 创建）和一个调用接口的示例页面（`/view/home`）。新建业务项目直接复制它起步。
+- `lumfall-business/` — B 端全栈模板：演示 `model/`（Dashboard 的 Model + Project 配置）、schema 表格 / 表单 / 搜索栏等内置组件的落地、`app/pages/dashboard/router.js` 自定义路由等，可以直接看它怎么组织业务代码。
+- `lumfall-document/` — 技术文档站模板（对标 VitePress）：`docs/` 下放 markdown，`app/pages/docs/docs-config.js` 配置导航 / 侧栏 / 首页，内置目录（TOC）、站内搜索（Ctrl/Cmd+K）、代码高亮复制、亮暗主题，自带 lumfall 技术文档内容。
+
+它们都只是参考：换一个目录名、换一套业务代码同样成立，不要把它们当成框架的固定结构。
