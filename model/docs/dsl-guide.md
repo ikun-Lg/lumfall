@@ -698,7 +698,7 @@ Result = [{ key: "product", name: "商品管理(pdd)", customConfig: { path: "/t
 
 ## 8. 前端消费链路
 
-理解前端如何消费 DSL，有助于写出正确的配置。项目列表页 `/view/project-list` 及其 project API 由 `lumfall-demo` 宿主应用提供；`/view/dashboard` 是 Lumfall 的项目工作台页面，下述链路由宿主应用的 project 模块支持：
+理解前端如何消费 DSL，有助于写出正确的配置。项目列表页 `/view/project-list` 及其 project API 由 `lumfall-business` 宿主应用提供；`/view/dashboard` 是 Lumfall 的项目工作台页面，下述链路由宿主应用的 project 模块支持：
 
 ```
 1. 浏览器访问 /view/dashboard/schema?projectKey=pdd&key=product
@@ -849,7 +849,7 @@ module.exports = {
 
 ### 步骤三：无需注册，自动加载
 
-`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。在包含 project 模块的宿主应用（如 `lumfall-demo`）中，重启服务后可通过以下 API 访问：
+`model/index.js` 会自动扫描 `model/**/model.js` 和 `model/**/project/*.js`，无需手动注册。在包含 project 模块的宿主应用（如 `lumfall-business`）中，重启服务后可通过以下 API 访问：
 
 | API                                    | 说明                                                                                   |
 | -------------------------------------- | -------------------------------------------------------------------------------------- |

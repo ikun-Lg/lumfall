@@ -25,7 +25,7 @@ Lumfall 是基于 Koa 2 的 Node.js 全栈框架，提供按目录自动加载�
 pnpm add lumfall
 ```
 
-本仓库同级的 `lumfall-demo/` 就是一个可直接运行的业务项目示例，它通过 `require("lumfall")` 使用已发布的框架版本；本地联调框架改动时，也可以临时把它改成 `link:../lumfall`。
+本仓库同级的 `lumfall-business/` 就是一个可直接运行的业务项目示例，它通过 `require("lumfall")` 使用已发布的框架版本；本地联调框架改动时，也可以临时把它改成 `link:../lumfall`。
 
 在业务项目入口显式启动服务：
 
