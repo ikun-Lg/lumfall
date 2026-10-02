@@ -107,7 +107,7 @@ frontendBuild(process.env._ENV);
 - 服务默认监听 `0.0.0.0:3000`，用 `IP` / `PORT` 环境变量覆盖
 - `frontendBuild(env)` 只认 `"local"`（启动 Webpack 开发服务，默认 `127.0.0.1:9002`）和 `"prod"`，其他值什么都不做
 - 环境用 `_ENV` ∈ `local` / `beta` / `prod`（缺省 `local`），**不是** `NODE_ENV`
-- **框架共享依赖对业务代码直接可用**（lumfall ≥ 1.1.1）：框架在 webpack.base 的 `resolve.alias` 维护共享依赖白名单（`sharedDeps`，alias 指向包目录、require.resolve 以框架为上下文），业务页面可直接 import `vue`、`vue-router`、`pinia`、`@arco-design/web-vue`、`@babel/runtime`、`axios`、`lodash`、`moment`、`md5` 及其子路径，无需重复安装，运行时单实例（框架解析优先于业务 node_modules）。要暴露更多库在 `sharedDeps` 加包名；框架没有的库仍需业务 `pnpm add`；旧版本（≤ 1.1.0）+ pnpm 下需显式声明
+- **框架共享依赖对业务代码直接可用**（lumfall ≥ 1.1.1）：框架在 webpack.base 的 `resolve.alias` 维护共享依赖白名单（`sharedDeps`，alias 指向包目录、require.resolve 以框架为上下文），业务页面可直接 import `vue`、`vue-router`、`pinia`、`@arco-design/web-vue`、`@babel/runtime`、`axios`、`lodash`、`moment`、`md5` 及其子路径，无需重复安装，运行时单实例（框架解析优先于业务 node_modules）。要暴露更多库在 `sharedDeps` 加包名。**白名单只作用于前端构建**——服务端代码（controller/service）运行在 Node 里，用到的包（jsonwebtoken、数据库驱动等）仍需业务 `pnpm add`；框架没有的前端库同理；旧版本（≤ 1.1.0）+ pnpm 下需显式声明
 
 ## 3. 启动流程与加载顺序
 
